@@ -2,6 +2,7 @@ package com.face.businesscard.ui.faceRegistration
 
 import FaceDirection
 import FaceRecognitionProcessorForRegistration
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.compose.runtime.getValue
@@ -105,24 +106,13 @@ class CardCreationViewModel @Inject constructor(
             }
         }
     }
-
-    fun analyze(lensFacing: Int) =  FaceDetectionAccurateAnalyzer{ faces, width, height, _image ->
-        viewModelScope.launch {
-            val currentDirection = recognitionIterator.value.last()
-            val bitmap = _image.toBitmap().rotate(
-                if (lensFacing == CameraSelector.LENS_FACING_FRONT) 270F else 90F
-            ).getOrNull()
-            if (faces.isNotEmpty()) {
-                bitmap?.let {
-                    faceProcessor?.detectInImage(
-                        faces,
-                        it,
-                        faceDirection = currentDirection
-                    )
-
-                }
-            }
-        }
+    /*faceProcessor?.detectInImage(
+    faces,
+    it,
+    faceDirection = currentDirection
+    )*/
+    fun analyze(image: Bitmap) {
+        FaceDetectionAccurateAnalyzer{ faces, width, height, _image -> }.analyzeFrame()
     }
     fun setRecognitionModel(recognitionModel: MappedByteBuffer) {
         faceProcessor = FaceRecognitionProcessorForRegistration(Interpreter(recognitionModel),callBack)

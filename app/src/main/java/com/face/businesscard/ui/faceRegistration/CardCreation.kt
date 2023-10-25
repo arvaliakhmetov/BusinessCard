@@ -2,6 +2,7 @@ package com.face.businesscard.ui.faceRegistration
 
 
 import FaceDirection
+import android.graphics.Bitmap
 import android.util.Log
 import android.widget.Toast
 import androidx.camera.core.CameraSelector
@@ -15,6 +16,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -67,6 +69,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -83,6 +86,7 @@ import androidx.compose.ui.graphics.PaintingStyle
 import androidx.compose.ui.graphics.Path
 
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -102,8 +106,10 @@ import com.face.businesscard.R
 import com.face.businesscard.ui.ApiResponse
 import com.face.businesscard.ui.Utils.LabeledInputWithDivider
 import com.face.businesscard.ui.face_detector.CameraView
+import com.face.businesscard.ui.face_detector.CameraViewAccurate
 import com.face.businesscard.ui.face_detector.FaceRecognitionViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import okhttp3.internal.wait
 import org.tensorflow.lite.support.common.FileUtil
@@ -134,6 +140,7 @@ fun CardCreation(
     val focusManager = LocalFocusManager.current
     val dotsNeedColor by viewModel.sizeOfrecognizedPoses.collectAsState()
     val saveRespons by viewModel.createCardresponse.collectAsState()
+    var capturedImage by remember { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(saveRespons){
         if(saveRespons is ApiResponse.Success){
@@ -168,14 +175,17 @@ fun CardCreation(
         when (page) {
             0 -> {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    CameraView(
+                    CameraViewAccurate(
                         context = context,
-                        analyzer = viewModel.analyze(lensFacing),
                         lensFacing = lensFacing,
                         lifecycleOwner = lifecycleOwner,
                         cameraExit = closeCamera,
                         imageCapture = null,
-                        showScreenSHot = {}
+                        showScreenSHot = {},
+                        currentBitmap = {
+                            capturedImage = it
+                            viewModel.analyze(it)
+                        }
                     )
                     Canvas(modifier = Modifier.fillMaxSize(), onDraw = {
                         val circlePath = Path().apply {
@@ -553,6 +563,9 @@ fun CardCreation(
             }
 
         }
+    }
+    capturedImage?.let {
+        Image(bitmap = it.asImageBitmap(), contentDescription = null)
     }
 
 }
