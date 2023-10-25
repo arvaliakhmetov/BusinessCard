@@ -40,7 +40,7 @@ import com.face.businesscard.ui.theme.BusinessCardTheme
 @Composable
 fun DetailScreen(
   shareData: List<Person?>?,
-  navigateToRecognizedFace:(String,List<Person?>)->Unit,
+ // navigateToRecognizedFace:(String,List<Person?>)->Unit,
 ) {
 
   val scrollState = rememberScrollState()
@@ -72,7 +72,7 @@ fun DetailScreen(
             .padding(vertical = 8.dp, horizontal = 16.dp)
             .fillMaxWidth()
             .clickable {
-              navigateToRecognizedFace(person!!.id, listOf(person))
+              //navigateToRecognizedFace(person!!.id, listOf(person))
             },
           verticalAlignment = Alignment.Top
         ) {
@@ -131,6 +131,6 @@ fun PreviewHome(){
   val canvas = Canvas(bitmap)
   canvas.drawRect(0F,0F,50F,50F,redPaint)
   BusinessCardTheme {
-    DetailScreen(listOf(Person("1", FloatArray(1),bitmap)), navigateToRecognizedFace = { s, l ->})
+    DetailScreen(listOf(Person("1", FloatArray(1),bitmap)))
   }
 }

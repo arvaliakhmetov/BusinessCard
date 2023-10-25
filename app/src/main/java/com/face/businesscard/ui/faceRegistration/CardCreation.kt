@@ -2,6 +2,7 @@ package com.face.businesscard.ui.faceRegistration
 
 
 import FaceDirection
+import android.util.Log
 import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -98,6 +99,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.face.businesscard.R
+import com.face.businesscard.ui.ApiResponse
 import com.face.businesscard.ui.Utils.LabeledInputWithDivider
 import com.face.businesscard.ui.face_detector.CameraView
 import com.face.businesscard.ui.face_detector.FaceRecognitionViewModel
@@ -105,6 +107,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.internal.wait
 import org.tensorflow.lite.support.common.FileUtil
+import java.lang.Math.PI
+import java.lang.Math.cos
+import java.lang.Math.sin
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -116,13 +121,7 @@ fun CardCreation(
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     var lensFacing by remember{ mutableIntStateOf(CameraSelector.LENS_FACING_FRONT) }
-    val currentDirection by viewModel.currentDirection.collectAsState()
     val recognitionModel = FileUtil.loadMappedFile(context, "mobile_face_net.tflite")
-    val top by viewModel.registeredTop.collectAsState()
-    val left by viewModel.registeredLeft.collectAsState()
-    val right by viewModel.registeredRight.collectAsState()
-    val bottom by viewModel.registeredBottom.collectAsState()
-    val main by viewModel.registeredCenter.collectAsState()
     val loading by viewModel.showLoader.collectAsState()
     val credsStep by viewModel.showCredsScreen.collectAsState()
     val closeCamera by viewModel.closeCamera.collectAsState()
@@ -133,6 +132,18 @@ fun CardCreation(
     val scrollState = rememberScrollState()
     val faceNotRecognized by viewModel.faceNotRecognised.collectAsState()
     val focusManager = LocalFocusManager.current
+    val dotsNeedColor by viewModel.sizeOfrecognizedPoses.collectAsState()
+    val saveRespons by viewModel.createCardresponse.collectAsState()
+
+    LaunchedEffect(saveRespons){
+        if(saveRespons is ApiResponse.Success){
+            Toast.makeText(context,"Визитка успешно создана",Toast.LENGTH_SHORT).show()
+            navigateToMain.invoke()
+
+        }
+    }
+
+
 
 
     SideEffect {
@@ -148,6 +159,7 @@ fun CardCreation(
             Toast.makeText(context,"Требуется повторная проверка",Toast.LENGTH_SHORT).show()
         }
     }
+
     HorizontalPager(
         modifier = Modifier,
         userScrollEnabled = false,
@@ -156,15 +168,15 @@ fun CardCreation(
         when (page) {
             0 -> {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    if(pagerState.currentPage == 0) {
-                        CameraView(
-                            context = context,
-                            analyzer = viewModel.analyze(lensFacing),
-                            lensFacing = lensFacing,
-                            lifecycleOwner = lifecycleOwner,
-                            cameraExit = closeCamera
-                        )
-                    }
+                    CameraView(
+                        context = context,
+                        analyzer = viewModel.analyze(lensFacing),
+                        lensFacing = lensFacing,
+                        lifecycleOwner = lifecycleOwner,
+                        cameraExit = closeCamera,
+                        imageCapture = null,
+                        showScreenSHot = {}
+                    )
                     Canvas(modifier = Modifier.fillMaxSize(), onDraw = {
                         val circlePath = Path().apply {
                             addOval(Rect(center, size.minDimension / 2.4f))
@@ -175,46 +187,40 @@ fun CardCreation(
                         val centerX = size.width / 2
                         val centerY = size.height / 2
                         val radius = size.minDimension / 2.1f
+                        val startAngle = 90f
 
                         // Define a brush for the lines
                         val lineBrush =
+                            Brush.horizontalGradient(colors = listOf(Color.LightGray, Color.LightGray))
+                        val lineBrush1 =
                             Brush.horizontalGradient(colors = listOf(Color.Green, Color.Green))
+                        val numPoints = 40
 
 
-                        when(currentDirection){
-                            FaceDirection.FACE_TOP -> {
+
+                        // Calculate and draw the points on the circle
+                        for (i in 0 until numPoints) {
+                            val angle = startAngle+ (i * 360f / numPoints).toFloat()
+                            val pointX = centerX + radius * cos(PI * angle / 180f).toFloat()
+                            val pointY = centerY + radius * sin(PI * angle / 180f).toFloat()
                                 drawCircle(
-                                    brush = lineBrush ,
-                                    center = Offset(centerX, centerY - radius + 15f),
+                                    brush = lineBrush,
+                                    center = Offset(pointX, pointY),
                                     radius = 6f,
                                     style = Stroke(6f)
                                 )
-                            }
-                            FaceDirection.FACE_BOTTOM -> {
-                                drawCircle(
-                                    brush = lineBrush ,
-                                    center = Offset(centerX, centerY + radius - 15f),
-                                    radius = 6f,
-                                    style = Stroke(6f)
-                                )
-                            }
-                            FaceDirection.FACE_RIGHT -> {
-                                drawCircle(
-                                    brush = lineBrush ,
-                                    center = Offset(centerX + radius - 15f, centerY),
-                                    radius = 6f,
-                                    style = Stroke(6f)
-                                )
-                            }
-                            FaceDirection.FACE_LEFT -> {
-                                drawCircle(
-                                    brush = lineBrush ,
-                                    center = Offset(centerX - radius + 15f, centerY),
-                                    radius = 6f,
-                                    style = Stroke(6f)
-                                )
-                            }
-                            else -> {}
+
+                        }
+                        for (i in 0..dotsNeedColor){
+                            val angle = startAngle+ (i * 360f / numPoints).toFloat()
+                            val pointX = centerX + radius * cos(PI * angle / 180f).toFloat()
+                            val pointY = centerY + radius * sin(PI * angle / 180f).toFloat()
+                            drawCircle(
+                                brush = lineBrush1,
+                                center = Offset(pointX, pointY),
+                                radius = 6f,
+                                style = Stroke(6f)
+                            )
                         }
                     })
                     Column(
@@ -270,19 +276,6 @@ fun CardCreation(
                                     color = Color.White,
                                     letterSpacing = 0.15.sp,
                                 ))
-                            }else{
-                                Text(
-                                    text = directionsMap[currentDirection] ?: "",
-                                    style = TextStyle(
-                                        fontSize = 14.sp,
-                                        lineHeight = 18.sp,
-                                        fontFamily = FontFamily(Font(R.font.inter)),
-                                        fontWeight = FontWeight(600),
-                                        color = Color.White,
-
-                                        textAlign = TextAlign.Center,
-                                    )
-                                )
                             }
                         }
                     }
@@ -466,7 +459,6 @@ fun CardCreation(
                                 FilledTonalButton(
                                     onClick = {
                                         viewModel.saveCard()
-                                        navigateToMain.invoke()
                                     }
                                 ) {
                                     Text(text = "Создать визитку",
@@ -565,6 +557,35 @@ fun CardCreation(
 
 }
 
+@Composable
+fun DirectionDots(
+    list: MutableList<FaceDirection>
+){
+    list.forEachIndexed { i, faceDirection ->
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val numPoints = 40
+            val lineBrush =
+                Brush.horizontalGradient(colors = listOf(Color.Green, Color.Green))
+            val lineBrushTest =
+                Brush.horizontalGradient(colors = listOf(Color.Red, Color.Red))
+            val centerX = size.width / 2
+            val centerY = size.height / 2
+            val radius = size.minDimension / 2.1f
+            val direction = FaceDirection.entries[i]
+            val angle = (i * 360f / numPoints).toFloat()
+            val pointX = centerX + radius * cos(PI * angle / 180f).toFloat()
+            val pointY = centerY + radius * sin(PI * angle / 180f).toFloat()
+            Log.d("angele", angle.toString())
+            drawCircle(
+                brush = lineBrushTest,
+                center = Offset(pointX, pointY),
+                radius = 6f,
+                style = Stroke(6f)
+            )
+        }
+    }
+}
+
 val spheresOfActivity = arrayOf(
     "Финансы",
     "IT",
@@ -578,12 +599,4 @@ val spheresOfActivity = arrayOf(
     "Туризм",
     "Наука",
     "Сельское хозяйство"
-)
-
-val directionsMap = hashMapOf(
-    FaceDirection.FACE_CENTER to "Посмотрите в камеру",
-    FaceDirection.FACE_RIGHT to "Посмотрите вправо",
-    FaceDirection.FACE_LEFT to "Посмотрите влево",
-    FaceDirection.FACE_TOP to "Посмотрите вверх",
-    FaceDirection.FACE_BOTTOM to "Посмотрите вниз"
 )

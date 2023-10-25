@@ -7,5 +7,5 @@ import com.google.android.gms.tasks.Task
 import com.google.mlkit.vision.face.Face
 
 abstract class VisionBaseProcessor<T> {
-    abstract fun detectInImage(faces: List<Face>, bitmap: Bitmap,rotation: Float? = null,faceDirection: FaceDirection? = null):Boolean
+    abstract fun detectInImage(faces: List<Face>, bitmap: Bitmap,rotation: Float? = null,faceDirection: FaceDirection? = null):FloatArray?
 }

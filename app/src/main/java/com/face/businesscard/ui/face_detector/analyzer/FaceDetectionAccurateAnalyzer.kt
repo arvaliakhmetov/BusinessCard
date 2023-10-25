@@ -1,33 +1,33 @@
-package com.face.businesscard.ui.face_detector
+package com.face.businesscard.ui.face_detector.analyzer
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.graphics.Rect
 import android.media.Image
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.compose.ui.graphics.ImageBitmap
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.common.internal.ImageUtils
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import crop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import processImage
-
 
 @SuppressLint("UnsafeOptInUsageError")
-class FaceDetectionAnalyzer(
+class FaceDetectionAccurateAnalyzer(
     private val onFaceDetected: (faces: MutableList<Face>, width: Int, height: Int,imageProxy: ImageProxy) -> Unit
 ) : ImageAnalysis.Analyzer {
 
     private val options = FaceDetectorOptions.Builder()
         .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
         .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-        .setMinFaceSize(0.5F)
+        .setMinFaceSize(2F)
         .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
         .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
-        .enableTracking()
         .build()
 
     private val faceDetector = FaceDetection.getClient(options)
@@ -35,7 +35,7 @@ class FaceDetectionAnalyzer(
 
     override fun analyze(imageProxy: ImageProxy) {
             imageProxy.image?.let {_image ->
-                val image = InputImage.fromMediaImage(_image, imageProxy.imageInfo.rotationDegrees)
+                val image = InputImage.fromMediaImage(_image, imageProxy.imageInfo.rotationDegrees,)
                 faceDetector.process(image)
                     .addOnFailureListener {
                         imageProxy.close()

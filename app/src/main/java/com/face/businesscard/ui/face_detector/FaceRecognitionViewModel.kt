@@ -1,48 +1,91 @@
 package com.face.businesscard.ui.face_detector
 
 import FaceRecognitionProcessor
+import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageFormat
+import android.graphics.Matrix
+import android.graphics.YuvImage
+import android.media.Image
 import android.util.Log
+import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.CameraSelector.LensFacing
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ExperimentalZeroShutterLag
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.toAndroidRect
+import androidx.compose.ui.graphics.toComposeRect
+import androidx.core.net.toFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.face.businesscard.api.ApiRepository
+import com.face.businesscard.api.dto.FeatureDto
+import com.face.businesscard.api.dto.PersonDto
+import com.face.businesscard.database.dao.CardInfoRepository
+import com.face.businesscard.ui.ApiResponse
+import com.face.businesscard.ui.BaseViewModel
+import com.face.businesscard.ui.CoroutinesErrorHandler
+import com.face.businesscard.ui.face_detector.utils.MatchedFaceInfo
 import com.face.businesscard.ui.face_recognizer.Person
+import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.Face
 import dagger.hilt.android.lifecycle.HiltViewModel
 import flip
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.tensorflow.lite.Interpreter
 import rotate
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.nio.ByteBuffer
 import java.nio.MappedByteBuffer
-import java.time.Instant
 import javax.inject.Inject
+import kotlin.math.min
 
 @HiltViewModel
 class FaceRecognitionViewModel @Inject constructor(
+    private val cardInfoRepository: CardInfoRepository,
+    private val apiRepository: ApiRepository
+): BaseViewModel() {
 
-): ViewModel() {
+    private val coroutinesErrorHandler = object : CoroutinesErrorHandler {
+        override fun onError(message: String) {
+            Log.d("ResponseError",message)
+        }
+    }
+
+    val recognisedFaceResponse = MutableStateFlow<ApiResponse<PersonDto>>(ApiResponse.Idling)
 
     var needAnalyzer = MutableStateFlow(true)
+    var faceRects = MutableStateFlow(listOf<Rect>())
     val coroutineDispatcher = CoroutineScope(Dispatchers.Default)
     var working by mutableStateOf(false)
-    var imageProxy = mutableStateOf<ImageProxy?>(null)
+    val capturedImage = MutableStateFlow<Bitmap?>(null)
+    var lensFacing = CameraSelector.LENS_FACING_BACK
+    var imageProxy = mutableStateOf<Bitmap?>(null)
         private set
 
     var bitmap = mutableStateOf<Bitmap?>(null)
         private set
 
-    val callBack = object : FaceRecognitionProcessor.FaceRecognitionCallback{
+    val cashedFacesList = MutableStateFlow<List<Person?>>(emptyList())
+
+    private val callBack = object : FaceRecognitionProcessor.FaceRecognitionCallback{
         override fun onFaceRecognised(face: Face?, probability: Float, name: String?) {
             faceProcessor?.let {
 
@@ -59,45 +102,124 @@ class FaceRecognitionViewModel @Inject constructor(
         }
     }
 
-   var faceProcessor by mutableStateOf<FaceRecognitionProcessor?>(null)
+    private val captureCallback = object : ImageCapture.OnImageCapturedCallback() {
+        @OptIn(ExperimentalGetImage::class) override fun onCaptureSuccess(image: ImageProxy) {
+            image.image?.let {
+                    Log.d("GET_MATCH_IMAGE_SIZE", image.imageInfo.toString())
+                    val _image = InputImage.fromMediaImage(it, image.imageInfo.rotationDegrees,)
+                    capturedImage.value = _image.bitmapInternal?.flip(horizontal = lensFacing == CameraSelector.LENS_FACING_FRONT)?.getOrNull()
+                    image.close()
+            }
+        }
 
+        override fun onError(exception: ImageCaptureException) {
+            super.onError(exception)
+        }
+    }
+
+    var faceProcessor by mutableStateOf<FaceRecognitionProcessor?>(null)
+    var imageCapture by mutableStateOf<ImageWithCropCapture?>(null)
     val faceSLIST = MutableStateFlow<List<Person?>>(emptyList())
+    val tapMatchedFace = MutableStateFlow(MatchedFaceInfo())
 
-
-
-
-
-    fun analyze(lensFacing: Int) =  FaceDetectionAnalyzer { faces, width, height, _image ->
-        if(needAnalyzer.value) {
-            var rotation= 0F
-            val bitmap = _image.toBitmap().rotate(
-                if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
-                    _image.imageInfo.rotationDegrees.toFloat()
-
-                } else {
-                    rotation = _image.imageInfo.rotationDegrees.toFloat()
-                    rotation
+    init {
+        viewModelScope.launch {
+            recognisedFaceResponse.collect{
+                if(it is ApiResponse.Success){
+                    Log.d("Response",it.data.toString())
                 }
-            ).onSuccess {
-                if (faces.isNotEmpty()) {
-                    coroutineDispatcher.launch {
-                        if (!working) {
-                            faceProcessor?.let { processor ->
-                                working = true
-                                working = processor.detectInImage(faces, it, 0F)
-                                faceSLIST.emit(faceProcessor!!.recognisedFaceList.toList())
-                            }
-                        }
-                    }
+                if(it is ApiResponse.Failure){
+                    Log.d("Response",it.errorMessage.toString())
                 }
-
             }
         }
     }
+
+    fun saveScreen(image: Bitmap?){
+        image?.let {
+            capturedImage.value = image
+        }
+    }
+
+
+    fun analyze(faces:List<Face>,bitmap: Bitmap){
+        coroutineDispatcher.launch {
+                faceProcessor?.let { processor ->
+                    val feature = processor.detectInImage(faces, bitmap, 0F)
+                    feature?.let {
+                        Log.d("ARRAY_I",it.toString())
+                        findNearestFace(feature)
+                    }
+                }
+            }
+        }
+
+    fun findNearestFace(feature: FloatArray) = baseRequest(
+        recognisedFaceResponse,
+        coroutinesErrorHandler
+    ){
+
+        apiRepository.getPerson(FeatureDto(feature = feature))
+    }
+    fun setDetectedFacesRects(
+        faces: List<Face>,
+        imageWidth: Int,
+        imageHeight: Int,
+        screenWidth: Int,
+        screenHeight:Int,
+        _imageProxy: Bitmap
+    ){
+        viewModelScope.launch {
+            val scaleFactor = min(
+                (screenWidth + 480).toFloat() / imageWidth,
+                screenHeight.toFloat() / imageHeight
+            )
+            faceRects.emit(faces.map { it.boundingBox.toComposeRect() })
+            imageProxy.value = _imageProxy
+        }
+
+    }
     fun setRecognitionModel(recognitionModel: MappedByteBuffer) {
         faceProcessor = FaceRecognitionProcessor(Interpreter(recognitionModel),callBack)
+    }
+    @OptIn(ExperimentalZeroShutterLag::class)
+    fun setImageCapture(){
+        imageCapture = ImageWithCropCapture(captureCallback)
     }
     fun needAnalyzer(needAnalyze: Boolean){
         viewModelScope.launch { needAnalyzer.emit(needAnalyze) }
     }
 }
+
+
+fun cropToBBox(_image: Bitmap, boundingBox: android.graphics.Rect, rotation: Float): Bitmap? {
+    var image = _image
+    val shift = 0
+    Log.d("CropToBBox", "BoundingBox: $boundingBox")
+    Log.d("CropToBBox", "Image Dimensions: ${image.width} x ${image.height}")
+    Log.d("CropToBBox", "Rotation: $rotation")
+    if (rotation != 0f) {
+        val matrix = Matrix()
+        matrix.postRotate(rotation)
+        image = Bitmap.createBitmap(image, 0, 0, image.width, image.height, matrix, true)
+    }
+    return if (
+        boundingBox.top >= 0 &&
+        boundingBox.bottom <= image.height &&  // Corrected from image.width
+        boundingBox.left >= 0 &&  // Corrected from boundingBox.top
+        boundingBox.left + boundingBox.width() <= image.width
+    ) {
+        Bitmap.createBitmap(
+            image,
+            boundingBox.left,
+            boundingBox.top + shift,
+            boundingBox.width(),
+            boundingBox.height()
+        )
+    } else null
+}
+
+
+
+
+

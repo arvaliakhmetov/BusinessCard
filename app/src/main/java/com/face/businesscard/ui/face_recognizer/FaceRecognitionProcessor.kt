@@ -56,48 +56,19 @@ class FaceRecognitionProcessor(
         bitmap: Bitmap,
         rotation: Float?,
         faceDirection: FaceDirection?
-    ):Boolean {
-        for (face in faces) {
-            if(kotlin.math.abs(face.headEulerAngleX) in 0f..20f
-                && kotlin.math.abs(face.headEulerAngleY) in 0f..30f
-                && face.rightEyeOpenProbability!! in 0.4..1.0
-                ) {
-                val faceBitmap = cropToBBox(bitmap, face.boundingBox,rotation?:0F)
-                if (faceBitmap == null) {
-                    Log.d("GraphicOverlay", "Face bitmap null")
-                    return false
-                }
-                val tensorImage: TensorImage = TensorImage.fromBitmap(faceBitmap)
-                val faceNetByteBuffer: ByteBuffer =
-                    faceNetImageProcessor.process(tensorImage).buffer
-                val faceOutputArray = Array(1) { FloatArray(192) }
-                faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
-                Log.d("TAG", "output array: " + faceOutputArray.first().size)
-                val uuid = Instant.now().epochSecond
-                if (callback != null) {
-                    if (recognisedFaceList.isNotEmpty()) {
-                             val result = findNearestFace(faceOutputArray[0])
-                            if (result!!.second < 1.1f) {
-                                callback.onFaceRecognised(
-                                    face,
-                                    result.second,
-                                    result.first
-                                )
-                            } else {
-                                registerFace(uuid.toString(), faceOutputArray[0], faceBitmap)
-                            }
-                        // if distance is within confidence
-
-                    } else {
-                        registerFace(
-                            uuid.toString(), faceOutputArray[0],
-                            faceBitmap
-                        )
-                    }
-                }
-            }
+    ):FloatArray? {
+        val faceBitmap = bitmap.flip(horizontal = false).getOrNull()
+        if (faceBitmap == null) {
+            Log.d("GraphicOverlay", "Face bitmap null")
+            return null
         }
-        return false
+        val tensorImage: TensorImage = TensorImage.fromBitmap(faceBitmap)
+        val faceNetByteBuffer: ByteBuffer =
+            faceNetImageProcessor.process(tensorImage).buffer
+        val faceOutputArray = Array(1) { FloatArray(192) }
+        faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
+        return faceOutputArray[0]
+
     }
 
     // looks for the nearest vector in the dataset (using L2 norm)
@@ -137,9 +108,12 @@ class FaceRecognitionProcessor(
             }
     }*/
 
-    private fun cropToBBox(_image: Bitmap, boundingBox: Rect, rotation:Float): Bitmap? {
+    fun cropToBBox(_image: Bitmap, boundingBox: Rect, rotation:Float): Bitmap? {
         var image = _image
         val shift = 0
+        Log.d("CropToBBox", "BoundingBox: $boundingBox")
+        Log.d("CropToBBox", "Image Dimensions: ${image.width} x ${image.height}")
+        Log.d("CropToBBox", "Rotation: $rotation")
         if (rotation != 0f) {
             val matrix = Matrix()
             matrix.postRotate(rotation)

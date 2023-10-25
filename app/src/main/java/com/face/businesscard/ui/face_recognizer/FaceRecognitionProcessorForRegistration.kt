@@ -64,145 +64,33 @@ class FaceRecognitionProcessorForRegistration(
         bitmap: Bitmap,
         rotation: Float?,
         faceDirection: FaceDirection?
-    ):Boolean {
+    ): FloatArray? {
         for (face in faces) {
             val faceBitmap = cropToBBox(bitmap, face.boundingBox, 0)
             if (faceBitmap == null) {
                 Log.d("GraphicOverlay", "Face bitmap null")
-                return false
+                return null
             }
+
+            Log.d("FACECE", "${face.headEulerAngleX}f,${face.headEulerAngleY}f")
             val tensorImage: TensorImage = TensorImage.fromBitmap(faceBitmap)
             val faceNetByteBuffer: ByteBuffer =
                 faceNetImageProcessor.process(tensorImage).buffer
             val faceOutputArray = Array(1) { FloatArray(192) }
-            when (faceDirection!!){
-                FaceDirection.FACE_TOP ->{
-                    if(face.headEulerAngleX in 25f..40f
-                        && kotlin.math.abs(face.headEulerAngleY) in 0f..10f
-                        && kotlin.math.abs(face.headEulerAngleZ) in 0f..10f
-                        && face.rightEyeOpenProbability!! in 0.8..1.0) {
-                        faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
-                        if (callback != null) {
-                            if(faceOutputArray.size>=1) {
-                                callback.onFaceDetected(
-                                    floatArray = faceOutputArray[0],
-                                    FaceDirection.FACE_TOP
-                                )
-                                registerFace(FaceDirection.FACE_TOP, faceOutputArray.first())
-                            }
-                        }
-                    }
-                }
-                FaceDirection.FACE_CENTER -> {
-                    if(kotlin.math.abs(face.headEulerAngleX) in 0f..10f
-                        && abs(face.headEulerAngleY) in 0f..10f
-                        && kotlin.math.abs(face.headEulerAngleZ) in 0f..10f
-                        && face.rightEyeOpenProbability!! in 0.3..1.0) {
-                        faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
-                        if (callback != null) {
-                            if(faceOutputArray.size>=1) {
-                                callback.onFaceDetected(
-                                    floatArray = faceOutputArray[0],
-                                    FaceDirection.FACE_CENTER
-                                )
-                                registerFace(FaceDirection.FACE_CENTER, faceOutputArray.first())
-                            }
-                        }
-                    }
-                }
-                FaceDirection.FACE_LEFT -> {
-                    if(kotlin.math.abs(face.headEulerAngleX) in 0f..10f
-                        && face.headEulerAngleY in 15f..35f
-                        && kotlin.math.abs(face.headEulerAngleZ) in 0f..10f
-                        && face.rightEyeOpenProbability!! in 0.3..1.0) {
-                        faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
-                        if (callback != null) {
-                            if(faceOutputArray.size>=1) {
-                                callback.onFaceDetected(
-                                    floatArray = faceOutputArray[0],
-                                    FaceDirection.FACE_LEFT
-                                )
-                                registerFace(FaceDirection.FACE_LEFT, faceOutputArray.first())
-                            }
-                        }
-                    }
-                }
-                FaceDirection.FACE_RIGHT -> {
-                    if(kotlin.math.abs(face.headEulerAngleX) in 0f..10f
-                        && -face.headEulerAngleY in 15f..35f
-                        && kotlin.math.abs(face.headEulerAngleZ) in 0f..10f
-                        && face.rightEyeOpenProbability!! in 0.3..1.0) {
-                        faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
-                        if (callback != null) {
-                            if(faceOutputArray.size>=1) {
-                                callback.onFaceDetected(
-                                    floatArray = faceOutputArray[0],
-                                    FaceDirection.FACE_RIGHT
-                                )
-                                registerFace(FaceDirection.FACE_RIGHT, faceOutputArray.first())
-                            }
-                        }
-                    }
-                }
-                FaceDirection.FACE_BOTTOM -> {
-                    if(-face.headEulerAngleX in 12f..30f
-                        && kotlin.math.abs(face.headEulerAngleY) in 0f..10f
-                        && kotlin.math.abs(face.headEulerAngleZ) in 0f..10f
-                        && face.rightEyeOpenProbability!! in 0.3..1.0) {
-                        faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
-                        if (callback != null) {
-                            if(faceOutputArray.size>=1) {
-                                callback.onFaceDetected(
-                                    floatArray = faceOutputArray[0],
-                                    FaceDirection.FACE_BOTTOM
-                                )
-                                registerFace(FaceDirection.FACE_BOTTOM, faceOutputArray.first())
-                            }
-                        }
-                    }
-                }
-                FaceDirection.FACE_NOT_RECOGNISED ->{
-                    if(kotlin.math.abs(face.headEulerAngleX) in 0f..10f
-                        && abs(face.headEulerAngleY) in 0f..10f
-                        && kotlin.math.abs(face.headEulerAngleZ) in 0f..10f
-                        && face.rightEyeOpenProbability!! in 0.3..1.0) {
-                        faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
-                            recognisedFaceDirectionsMap[FaceDirection.FACE_CENTER.name]?.let { floatArray ->
-                                if (faceOutputArray.size >= 1) {
-                                    val result = findCenterFace(faceOutputArray[0])
-                                    if (result!! > 1.08f) {
-                                        callback?.onFaceDetected(
-                                            floatArray = faceOutputArray[0],
-                                            FaceDirection.FACE_NOT_RECOGNISED
-                                        )
-                                        recognisedFaceDirectionsMap.clear()
-                                    } else {
-                                        //registerFace(uuid.toString(), faceOutputArray[0], faceBitmap)
-                                    }
-                                }
-                            }
-                        }
+            if(face.headEulerAngleX in (faceDirection!!.eulerX-8)..(faceDirection.eulerX+8)
+                && face.headEulerAngleY in (faceDirection.eulerY-8)..(faceDirection.eulerY+8)
+            ) {
+                faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
+                Log.d("currentDir_GOOD", faceDirection.name)
+                if (faceOutputArray.size >= 1) {
+                    callback!!.onFaceDetected(
+                        floatArray = faceOutputArray[0],
+                        faceDirection
+                    )
                 }
             }
         }
-        return false
-    }
-    private fun findCenterFace(vector: FloatArray): Float? {
-        return listOf(recognisedFaceDirectionsMap[FaceDirection.FACE_CENTER.name]!!)
-            .filter { vectorMain ->
-                vector.size == vectorMain.size
-            }
-            .minByOrNull { vectorMain ->
-                vector.zip(vectorMain)
-                    .map { (a, b) -> (a - b) * (a - b) }
-                    .sum()
-            }
-            ?.let { vectorMain ->
-                val squaredDistance = vector.zip(vectorMain)
-                    .map { (a, b) -> (a - b) * (a - b) }
-                    .sum()
-                sqrt(squaredDistance.toDouble()).toFloat()
-            }
+        return null
     }
 
     // looks for the nearest vector in the dataset (using L2 norm)
@@ -244,11 +132,46 @@ class FaceRecognitionProcessorForRegistration(
 
     }
 }
-enum class FaceDirection{
-    FACE_TOP,
-    FACE_BOTTOM,
-    FACE_RIGHT,
-    FACE_LEFT,
-    FACE_CENTER,
-    FACE_NOT_RECOGNISED,
+enum class FaceDirection(val eulerX:Float,val eulerY: Float){
+    FACE_CENTER(0f,0f),
+    FACE_BOTTOM1(-25f,0f),
+    FACE_BOTTOM2(-19f,10f),
+    FACE_BOTTOM3(-15f,16f),
+    FACE_BOTTOM4(-9f,23f),
+    FACE_BOTTOM5(-6f,25f),
+    FACE_BOTTOM_LEFT1(-3f,27f),
+    FACE_BOTTOM_LEFT2(-2f,26f),
+    FACE_BOTTOM_LEFT3(-2f,26f),
+    FACE_BOTTOM_LEFT4(-2f,26f),
+    FACE_BOTTOM_LEFT5(-2f,26f),
+    FACE_LEFT1(4.342686f,27.130363f),
+    FACE_LEFT2(6.5351496f,27.553864f),
+    FACE_LEFT3(9.802652f,26.787552f),
+    FACE_LEFT4(10.25518f,27.200367f),
+    FACE_LEFT5(11.335956f,22.058292f),
+    FACE_LEFT_TOP1(16.904812f,18.682642f),
+    FACE_LEFT_TOP2(21.34992f,10.344861f),
+    FACE_LEFT_TOP3(22f,12f),
+    FACE_LEFT_TOP4(23f,8f),
+    FACE_LEFT_TOP5(25f,4f),
+    FACE_TOP(29.338478f,-2.2891824f),
+    FACE_TOP1(33.419968f,-4.769429f),
+    FACE_TOP2(31.742641f,-13.47013f),
+    FACE_TOP3(30.369144f,-18.208298f),
+    FACE_TOP4(26.87295f,-20.52124f),
+    FACE_TOP5(26.058212f,-22.8284f),
+    FACE_TOP_RIGHT1(19.242182f,-28.28658f),
+    FACE_TOP_RIGHT2(13.546769f,-30.70015f),
+    FACE_TOP_RIGHT3(10.390649f,-30.907042f),
+    FACE_TOP_RIGHT4(7.710272f,-29.300814f),
+    FACE_TOP_RIGHT5(4.904235f,-28.726263f),
+    FACE_RIGHT1(-2f,-34f),
+    FACE_RIGHT2(-4f,-28f),
+    FACE_RIGHT3(-6f,-22f),
+    FACE_RIGHT4(-8f,-21f),
+    FACE_RIGHT5(-10f,-20f),
+    FACE_BOTTOM_RIGHT1(-12f,-14f),
+    FACE_BOTTOM_RIGHT2(-14f,-12f),
+    FACE_BOTTOM_RIGHT3(-16f,-6f),
+    FACE_BOTTOM_RIGHT4(-20f,0f),
 }

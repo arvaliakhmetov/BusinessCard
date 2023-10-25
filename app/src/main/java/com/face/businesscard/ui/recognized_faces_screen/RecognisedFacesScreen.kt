@@ -68,88 +68,43 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.ImageLoader
+import coil.compose.AsyncImage
 import com.face.businesscard.R
+import com.face.businesscard.api.dto.PersonDto
 import com.face.businesscard.ui.face_recognizer.Person
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RecognizedFacesScreen(
-    selectedFace: String,
-    faces: List<Person?>,
+    person: PersonDto?,
     navigateBack:() -> Unit,
     viewModel: RecognizedFacesViewModel = hiltViewModel()
 ) {
-    val foundedFace by viewModel.foundedFace.collectAsState()
-    val currentFace by viewModel.currentFaceV.collectAsState()
     val context = LocalContext.current
-    val contacts = hashMapOf(
-        "YouTube" to "https://www.youtube.com/watch?v=bKDdT_nyP54&ab_channel=AkonVEVO",
-        "Вконтакте" to "https://vk.com/durov",
-        "Фирменный рецепт" to "https://povar.ru/recipes/syrniki_ot_iulii_vysockoi-43099.html"
-    )
     val scrollState = rememberScrollState()
     val window = LocalConfiguration.current
-    val sheetState = rememberBottomSheetScaffoldState(
-        bottomSheetState = SheetState(
-            initialValue = if (faces.size <= 1) SheetValue.Hidden else SheetValue.PartiallyExpanded,
-            skipHiddenState = faces.size > 1,
-            skipPartiallyExpanded = faces.size < 1
-        )
-    )
 
     SideEffect {
-        viewModel.findFace(faces.find { it?.id == selectedFace })
+        person?.let {
+            viewModel.getImage(person.id.toString())
+        }
     }
+
     Box(modifier = Modifier
         .fillMaxSize()
         .background(Color.Black))
-    BottomSheetScaffold(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black),
-        scaffoldState = sheetState,
-        sheetDragHandle = {
-            if (faces.size > 1) {
-                Text(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    text = "Другие определенные лица",
-                    style = TextStyle(
-                        fontSize = 12.sp,
-                        lineHeight = 18.sp,
-                        fontFamily = FontFamily(Font(R.font.inter)),
-                        fontWeight = FontWeight(600),
-                        color = Color(0xFF858585),
-                    )
-                )
-            }
-        },
-        sheetContent = {
-            if (faces.size > 1) {
-                LazyRow(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    items(faces.size) { face ->
-                            Image(
-                                bitmap = (faces[face]!!.faceBitmap!!),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(72.dp)
-                                    .clip(CircleShape)
-                                    .clickable {
-                                        viewModel.resetFace()
-                                        viewModel.findFace(faces[face])
-                                    },
-                                contentScale = ContentScale.FillWidth
-                            )
 
-                    }
-                }
-            }
-        }
     ) {
-        Column (Modifier.fillMaxSize().verticalScroll(scrollState)
-            .background(Color.Black),
+        Column (
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .background(Color.Black),
             verticalArrangement = Arrangement.Top
         ){
 
@@ -165,20 +120,43 @@ fun RecognizedFacesScreen(
                         .background(Color.DarkGray),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    Image(
-                        modifier = Modifier
-                            .height((window.screenHeightDp / 2).dp)
-                            .blur(20.dp),
-                        bitmap = currentFace?.faceBitmap?: defaultBitmap(),
+                    AsyncImage(
+                        model = "http://154.194.53.89:8000/get_image/?id=17",
                         contentDescription = null,
+                        modifier = Modifier
+                            .height((window.screenHeightDp / 2).dp),
                         contentScale = ContentScale.FillHeight
                     )
-                    Box(
+                    BoxWithConstraints(
                         modifier = Modifier
                             .background(gradient)
                             .fillMaxWidth()
-                            .height((window.screenHeightDp / 2).dp)
-                    )
+                            .height((window.screenHeightDp / 2).dp),
+                        contentAlignment = Alignment.BottomStart
+                    ){
+                        person?.let { face ->
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                            ) {
+                                val name1 =
+                                    (face.surname ?: "") + " " +
+                                            (face.name ?: "") + " " +
+                                            (face.second_name ?: "")
+                                Text(
+                                    text = name1,
+                                    color = Color.White,
+                                    style = TextStyle(
+                                        fontSize = 36.sp,
+                                        lineHeight = 40.sp,
+                                        fontFamily = FontFamily(Font(R.font.inter)),
+                                        fontWeight = FontWeight(700),
+                                        color = Color.White,
+                                    ),
+                                )
+                            }
+                        }
+                    }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -215,26 +193,8 @@ fun RecognizedFacesScreen(
                         }
                     }
                 }
-                foundedFace?.let{ face ->
-                    Box(modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                    ){
-                        val name1 =
-                            (foundedFace?.surname?:"") + " " +
-                                    (foundedFace?.name?:"") + " " +
-                                    (foundedFace?.secondName?:"")
-                        Text(
-                            text = name1,
-                            color = Color.White,
-                            style = TextStyle(
-                                fontSize = 36.sp,
-                                lineHeight = 40.sp,
-                                fontFamily = FontFamily(Font(R.font.inter)),
-                                fontWeight = FontWeight(700),
-                                color = Color.White,
-                            ),
-                        )
-                    }
+                person?.let{ face ->
+
 
                     Column(
                         modifier = Modifier
@@ -279,7 +239,7 @@ fun RecognizedFacesScreen(
 
                                 if (showMore) {
                                     Text(
-                                        text = foundedFace?.description?:"",
+                                        text = face.description?:"",
                                         style = TextStyle(
                                             fontSize = 14.sp,
                                             lineHeight = 18.sp,
@@ -303,7 +263,7 @@ fun RecognizedFacesScreen(
                                 }
                             }
                         }
-                        if (face.links.isNotEmpty()) {
+                        if (face.conts.isNotEmpty()) {
                             Text(
                                 modifier = Modifier.padding(vertical = 16.dp),
                                 text = "Ссылки",
@@ -315,7 +275,7 @@ fun RecognizedFacesScreen(
                                     color = Color.White,
                                 )
                             )
-                            face.links.forEach {
+                            face.conts.forEach { entry ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -327,12 +287,12 @@ fun RecognizedFacesScreen(
                                     TextButton(onClick = {
                                         val urlIntent = Intent(
                                             Intent.ACTION_VIEW,
-                                            Uri.parse(it.link)
+                                            Uri.parse(entry.value)
                                         )
                                         context.startActivity(urlIntent)
                                     }) {
                                         Text(
-                                            text = it.name, style = TextStyle(
+                                            text = entry.key, style = TextStyle(
                                                 fontSize = 20.sp,
                                                 lineHeight = 20.sp,
                                                 fontFamily = FontFamily(Font(R.font.inter)),

@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import com.face.businesscard.api.dto.PersonDto
 import com.face.businesscard.ui.face_recognizer.Person
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -19,7 +20,7 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 @Composable
 fun FaceDetector(
     navigateBack:() -> Unit,
-    navigateToRecognizedFacesScreen:(id: String,List<Person?>)-> Unit
+    navigateToRecognizedFacesScreen:(PersonDto)-> Unit
 ){
     val permissionState = rememberMultiplePermissionsState(
         permissions = listOf(

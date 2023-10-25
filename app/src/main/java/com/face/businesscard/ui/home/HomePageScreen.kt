@@ -29,6 +29,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import com.face.businesscard.api.dto.PersonDto
 import com.face.businesscard.database.entity.CardInfo
 import com.face.businesscard.navigation.NavigationViewModel
 import com.face.businesscard.navigation.Navigator
@@ -88,19 +89,19 @@ fun HomePageScreen(
                 BackHandler(enabled = true, onBack = {})
                 DetailScreen(
                   personList,
-                  navigateToRecognizedFace = viewModel::navigateToRecognizedFacesScreen
+                  //navigateToRecognizedFace = viewModel::navigateToRecognizedFacesScreen
                 )
               }
               else{
                 DetailScreen(
                   emptyList(),
-                  navigateToRecognizedFace = viewModel::navigateToRecognizedFacesScreen
+                  //navigateToRecognizedFace = viewModel::navigateToRecognizedFacesScreen
                 )
               }
             }else{
               DetailScreen(
                 emptyList(),
-                navigateToRecognizedFace = viewModel::navigateToRecognizedFacesScreen
+                //navigateToRecognizedFace = viewModel::navigateToRecognizedFacesScreen
               )
             }
 
@@ -113,8 +114,7 @@ fun HomePageScreen(
             ProfileScreen(
               faces = knownFaces,
               navigateToFaceRegistrationScreen = viewModel::navigateToFaceRegistrationScreen,
-              navigateToRecognizedface = viewModel::navigateToRecognizedFacesScreen,
-              deleteCard = profileViewModel::deletePerson
+              deleteCard = profileViewModel::deletePerson,
             )
           }
           composable(route = Screen.FaceDetector.route) {
@@ -124,9 +124,10 @@ fun HomePageScreen(
             )
           }
           composable(Screen.RecognizedFaceScreen.route){
-            val data= viewModel.getSharedData()!!.data as Pair<*, *>
+            val data= viewModel.getSharedData()?.data
+            val person = if(data is PersonDto) data else null
             BackHandler(enabled = true, onBack = viewModel::navigateToHome)
-            RecognizedFacesScreen(selectedFace = data.first as String, faces = data.second as List<Person?>,viewModel::navigateToHome)
+            RecognizedFacesScreen(person,viewModel::navigateToHome)
           }
         composable(Screen.FaceRegistrationScreen.route){
           //val data= viewModel.getSharedData()!!.data as Pair<*, *>

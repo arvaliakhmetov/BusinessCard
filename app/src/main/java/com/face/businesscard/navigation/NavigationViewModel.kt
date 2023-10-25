@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.face.businesscard.api.dto.PersonDto
 import com.face.businesscard.ui.face_recognizer.Person
 import com.face.businesscard.ui.home.NavBarItems
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,8 +46,8 @@ class NavigationViewModel @Inject constructor(
     fun navigateToProfile(){
         navigator.navigateTo(Navigator.NavTarget.Profile)
     }
-    fun navigateToRecognizedFacesScreen(id: String,faces:List<Person?>){
-        setData(SharedData.Value(Pair(id,faces)))
+    fun navigateToRecognizedFacesScreen(person: PersonDto){
+        setData(SharedData.Value(person))
         navigator.navigateTo(Navigator.NavTarget.RecognizedFacesScreen)
     }
     fun navigateToFaceRegistrationScreen(){

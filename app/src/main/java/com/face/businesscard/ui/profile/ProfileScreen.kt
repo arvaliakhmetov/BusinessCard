@@ -56,7 +56,6 @@ import com.face.businesscard.ui.theme.BusinessCardTheme
 fun ProfileScreen(
     faces: List<CardInfo>,
     deleteCard: (Long) -> Unit,
-    navigateToRecognizedface:(String,List<Person?>) -> Unit,
     navigateToFaceRegistrationScreen: () ->Unit,
 ){
     val scrollstate = rememberScrollState()
@@ -123,7 +122,7 @@ fun ProfileScreen(
                                 .clip(RoundedCornerShape(8.dp))
                                 .border(1.dp, Color.White, RoundedCornerShape(8.dp))
                                 .clickable {
-                                    navigateToRecognizedface("1", listOf(Person("1", faceVector = it.arrayOfFeatures.first(),null)))
+                                    //navigateToRecognizedface("1", listOf(Person("1", faceVector = it.arrayOfFeatures.first(),null)))
                                 }
                             ) {
                                 Row(
@@ -221,7 +220,6 @@ fun ProfileScreen(
                     modifier = Modifier
                         .padding(top = 30.dp)
                         .clickable {
-
                         },
                     text = "Выйти из аккаунта",
                     style = TextStyle(
