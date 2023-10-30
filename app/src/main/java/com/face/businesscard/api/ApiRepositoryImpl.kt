@@ -23,11 +23,14 @@ class ApiRepositoryImpl(
         val second_name =  MultipartBody.Part.createFormData("second_name",createDto.second_name)
         val description =  MultipartBody.Part.createFormData("description",createDto.description)
         val data =  MultipartBody.Part.createFormData("data",createDto.data)
+        Log.d("DATA_A",createDto.data)
         api.createPerson(name,surname,second_name,description,data)
     }
 
     override fun getPerson(feature: FeatureDto) = apiRequestHelper.apiRequestFlow{
         val featurePart =  MultipartBody.Part.createFormData("data",Json.encodeToString(feature))
+
+        Log.d("DATA_A",Json.encodeToString(feature))
         api.getPerson(featurePart)
     }
 

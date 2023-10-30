@@ -29,11 +29,6 @@ class ProfileViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val faces = cardInfoRepository.getKnownFaces().first()
-            /*cardInfoRepository.insertCard(faces.find { it.name == "Артур" }!!.copy(
-                secondName = "Раушанович"
-            ))*/
-            knownFaces.value = faces
 
             Log.d("Face_known",knownFaces.value.toString())
         }

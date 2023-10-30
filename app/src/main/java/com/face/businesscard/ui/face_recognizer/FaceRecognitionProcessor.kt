@@ -67,6 +67,7 @@ class FaceRecognitionProcessor(
             faceNetImageProcessor.process(tensorImage).buffer
         val faceOutputArray = Array(1) { FloatArray(192) }
         faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
+        Log.d("GraphicOverlay", "${faceOutputArray[0]}")
         return faceOutputArray[0]
 
     }

@@ -125,23 +125,22 @@ fun ScanSurface(
 
     LaunchedEffect(capturedBitmap){
         capturedBitmap?.let {
-            Log.d("CAPTURED_FACE",facesList.toList().map { it.trackingId }.toString())
             stopCamera = true
             delay(1000)
             try {
                 val image = cropToBBox(it,Rect(
                     Offset(
-                        (rawCenterX - imageWidth.value/2).toFloat(),
-                        (rawCenterY - imageHeight.value/2).toFloat()
+                        (rawCenterX - imageWidth.value/2),
+                        (rawCenterY - imageHeight.value/2)
                     ),
                     Size(
-                        (radius*1.5).toFloat(),
-                        (radius*1.5).toFloat()
+                        (imageWidth.value).toFloat(),
+                        (imageHeight.value).toFloat()
                     )
                 ).toAndroidRectF().toRect(),0f)
                 image?.let {
                     it.flip(horizontal = false).getOrNull()?.let {bitmap ->
-                        viewModel.analyze(facesList, bitmap)
+                        viewModel.analyze(selectedFace!!, lensFacing == CameraSelector.LENS_FACING_FRONT)
                     }
                 }
             } catch (_:Throwable){}
@@ -170,7 +169,7 @@ fun ScanSurface(
                     val placeable = measurable.measure(constraints)
                     val x = offsetX
                     val y = offsetY
-                    layout((placeable.width).toInt(), (placeable.height).toInt()) {
+                    layout((placeable.width), (placeable.height)) {
                         placeable.placeRelative(x.roundToInt(), y.roundToInt())
                     }
                 }
@@ -230,7 +229,6 @@ fun ScanSurface(
                             radius = _radius
                             rawCenterX = _rawCenterX
                             rawCenterY = _rawCenterY
-                            //viewModel.takeShot(lensFacing)
                         }
 
                     }

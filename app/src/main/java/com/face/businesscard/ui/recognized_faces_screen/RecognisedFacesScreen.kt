@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -83,6 +84,7 @@ fun RecognizedFacesScreen(
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    val horizontal = rememberScrollState()
     val window = LocalConfiguration.current
 
     SideEffect {
@@ -120,13 +122,16 @@ fun RecognizedFacesScreen(
                         .background(Color.DarkGray),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    AsyncImage(
-                        model = "http://154.194.53.89:8000/get_image/?id=17",
-                        contentDescription = null,
-                        modifier = Modifier
-                            .height((window.screenHeightDp / 2).dp),
-                        contentScale = ContentScale.FillHeight
-                    )
+                    person?.let {
+                        AsyncImage(
+                            model = "http://154.194.53.89:8000/get_image/?id=${it.id}",
+                            contentDescription = null,
+                            modifier = Modifier
+                                .height((window.screenHeightDp / 2).dp),
+                            contentScale = ContentScale.FillHeight
+                        )
+
+                    }
                     BoxWithConstraints(
                         modifier = Modifier
                             .background(gradient)
@@ -204,7 +209,8 @@ fun RecognizedFacesScreen(
                         Row(
                             Modifier
                                 .padding(vertical = 13.dp)
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .horizontalScroll(horizontal),
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {

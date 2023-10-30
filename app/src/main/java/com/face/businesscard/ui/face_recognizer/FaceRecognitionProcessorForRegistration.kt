@@ -72,13 +72,13 @@ class FaceRecognitionProcessorForRegistration(
                 return null
             }
 
-            Log.d("FACECE", "${face.headEulerAngleX}f,${face.headEulerAngleY}f")
+            Log.d("FACECE", "${face.headEulerAngleX}f,${face.headEulerAngleY}f,${face.headEulerAngleZ}")
             val tensorImage: TensorImage = TensorImage.fromBitmap(faceBitmap)
             val faceNetByteBuffer: ByteBuffer =
                 faceNetImageProcessor.process(tensorImage).buffer
             val faceOutputArray = Array(1) { FloatArray(192) }
-            if(face.headEulerAngleX in (faceDirection!!.eulerX-8)..(faceDirection.eulerX+8)
-                && face.headEulerAngleY in (faceDirection.eulerY-8)..(faceDirection.eulerY+8)
+            if(face.headEulerAngleX in (faceDirection!!.eulerX-9)..(faceDirection.eulerX+9)
+                && face.headEulerAngleY in (faceDirection.eulerY-9)..(faceDirection.eulerY+9)
             ) {
                 faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
                 Log.d("currentDir_GOOD", faceDirection.name)
@@ -134,16 +134,16 @@ class FaceRecognitionProcessorForRegistration(
 }
 enum class FaceDirection(val eulerX:Float,val eulerY: Float){
     FACE_CENTER(0f,0f),
-    FACE_BOTTOM1(-25f,0f),
-    FACE_BOTTOM2(-19f,10f),
-    FACE_BOTTOM3(-15f,16f),
-    FACE_BOTTOM4(-9f,23f),
-    FACE_BOTTOM5(-6f,25f),
-    FACE_BOTTOM_LEFT1(-3f,27f),
-    FACE_BOTTOM_LEFT2(-2f,26f),
-    FACE_BOTTOM_LEFT3(-2f,26f),
-    FACE_BOTTOM_LEFT4(-2f,26f),
-    FACE_BOTTOM_LEFT5(-2f,26f),
+    FACE_BOTTOM1(-16.772182f,1.2777171f),
+    FACE_BOTTOM2(-15.331356f,8.203784f),
+    FACE_BOTTOM3(-11.995197f,14.251421f),
+    FACE_BOTTOM4(-9.267882f,18.591719f),
+    FACE_BOTTOM5(-8.347089f,20.83218f),
+    FACE_BOTTOM_LEFT1(-7.640806f,17.674784f),
+    FACE_BOTTOM_LEFT2(-6.7679276f,21.702019f),
+    FACE_BOTTOM_LEFT3(-5.8894515f,22.982796f),
+    FACE_BOTTOM_LEFT4(-3.5228975f,27.050762f),
+    FACE_BOTTOM_LEFT5(-2.458739f,32.37705f),
     FACE_LEFT1(4.342686f,27.130363f),
     FACE_LEFT2(6.5351496f,27.553864f),
     FACE_LEFT3(9.802652f,26.787552f),

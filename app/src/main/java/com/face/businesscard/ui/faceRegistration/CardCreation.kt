@@ -5,6 +5,7 @@ import FaceDirection
 import android.util.Log
 import android.widget.Toast
 import androidx.camera.core.CameraSelector
+import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.StartOffset
@@ -175,7 +176,8 @@ fun CardCreation(
                         lifecycleOwner = lifecycleOwner,
                         cameraExit = closeCamera,
                         imageCapture = null,
-                        showScreenSHot = {}
+                        showScreenSHot = {},
+                        scale = PreviewView.ScaleType.FIT_CENTER
                     )
                     Canvas(modifier = Modifier.fillMaxSize(), onDraw = {
                         val circlePath = Path().apply {
@@ -201,8 +203,8 @@ fun CardCreation(
                         // Calculate and draw the points on the circle
                         for (i in 0 until numPoints) {
                             val angle = startAngle+ (i * 360f / numPoints).toFloat()
-                            val pointX = centerX + radius * cos(PI * angle / 180f).toFloat()
-                            val pointY = centerY + radius * sin(PI * angle / 180f).toFloat()
+                            val pointX = centerX + radius * kotlin.math.cos(PI * angle / 180f).toFloat()
+                            val pointY = centerY + radius * kotlin.math.sin(PI * angle / 180f).toFloat()
                                 drawCircle(
                                     brush = lineBrush,
                                     center = Offset(pointX, pointY),
@@ -459,6 +461,7 @@ fun CardCreation(
                                 FilledTonalButton(
                                     onClick = {
                                         viewModel.saveCard()
+                                        navigateToMain.invoke()
                                     }
                                 ) {
                                     Text(text = "Создать визитку",

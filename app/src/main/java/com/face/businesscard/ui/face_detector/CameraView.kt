@@ -48,6 +48,7 @@ fun CameraView(
     cameraExit: Boolean? = false,
     imageCapture: ImageWithCropCapture?,
     showScreenSHot: (Bitmap?) -> Unit,
+    scale: PreviewView.ScaleType? = PreviewView.ScaleType.FILL_CENTER
 ) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
@@ -70,7 +71,7 @@ fun CameraView(
     val previewView by remember {
         mutableStateOf(
             PreviewView(context).apply {
-                scaleType = PreviewView.ScaleType.FILL_CENTER
+                scaleType = scale!!
             }
         )
     }

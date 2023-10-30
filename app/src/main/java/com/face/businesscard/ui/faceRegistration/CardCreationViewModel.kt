@@ -37,7 +37,6 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CardCreationViewModel @Inject constructor(
-    private val cardInfoRepository: CardInfoRepository,
     private val api:ApiRepository
 ): BaseViewModel() {
 

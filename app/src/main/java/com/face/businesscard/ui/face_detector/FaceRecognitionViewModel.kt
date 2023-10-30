@@ -142,12 +142,14 @@ class FaceRecognitionViewModel @Inject constructor(
     }
 
 
-    fun analyze(faces:List<Face>,bitmap: Bitmap){
+    @OptIn(ExperimentalGetImage::class)
+    fun analyze(face: Face,flip: Boolean){
         coroutineDispatcher.launch {
                 faceProcessor?.let { processor ->
-                    val feature = processor.detectInImage(faces, bitmap, 0F)
+                    val faceBox = cropToBBox(imageProxy.value!!,face.boundingBox,if(flip) 270f else 90f)!!.flip(horizontal = flip).getOrNull()
+                    val feature = processor.detectInImage(listOf(face),faceBox!! , 0F)
                     feature?.let {
-                        Log.d("ARRAY_I",it.toString())
+                        Log.d("ARRAY_I", it.toList().toString())
                         findNearestFace(feature)
                     }
                 }
