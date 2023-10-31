@@ -7,6 +7,8 @@ data class CardCreateDto (
     val name: String,
     val surname: String,
     val second_name: String,
+    val company: String = "",
+    val jobtitle: String = "",
     val description: String,
     val data: String
 )

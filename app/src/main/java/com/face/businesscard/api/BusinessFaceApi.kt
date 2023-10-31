@@ -23,7 +23,9 @@ interface BusinessFaceApi {
         @Part surname: MultipartBody.Part,
         @Part second_name: MultipartBody.Part,
         @Part description: MultipartBody.Part,
-        //@Part file: MultipartBody.Part,
+        @Part company: MultipartBody.Part,
+        @Part jobTitle: MultipartBody.Part,
+        @Part file: MultipartBody.Part,
         @Part data: MultipartBody.Part
         ): Response<String>
 

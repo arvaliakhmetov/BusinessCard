@@ -22,9 +22,11 @@ class ApiRepositoryImpl(
         val surname =  MultipartBody.Part.createFormData("surname",createDto.surname)
         val second_name =  MultipartBody.Part.createFormData("second_name",createDto.second_name)
         val description =  MultipartBody.Part.createFormData("description",createDto.description)
+        val jobTitle = MultipartBody.Part.createFormData("jobtitle",createDto.description)
+        val company = MultipartBody.Part.createFormData("company",createDto.description)
         val data =  MultipartBody.Part.createFormData("data",createDto.data)
         Log.d("DATA_A",createDto.data)
-        api.createPerson(name,surname,second_name,description,data)
+        api.createPerson(name,surname,second_name,description,company,jobTitle,file,data)
     }
 
     override fun getPerson(feature: FeatureDto) = apiRequestHelper.apiRequestFlow{

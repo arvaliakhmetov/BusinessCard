@@ -11,6 +11,8 @@ data class CardInfo(
     val surname: String = "",
     val secondName: String = "",
     val description: String = "",
+    val jobtitle: String = "",
+    val company: String = "",
     val activities: List<String> = emptyList(),
     val links: List<LinkEntity> = emptyList(),
     val arrayOfFeatures: List<FloatArray> = emptyList(),
