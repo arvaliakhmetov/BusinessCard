@@ -91,18 +91,18 @@ fun ScanSurface(
     val scope = rememberCoroutineScope()
     val imageCaptureUseCase = viewModel.imageCapture
 
-    val screenWidth by remember { mutableStateOf(context.resources.displayMetrics.widthPixels) }
-    val screenHeight by remember { mutableStateOf(context.resources.displayMetrics.heightPixels) }
+    val screenWidth by remember { mutableIntStateOf(context.resources.displayMetrics.widthPixels) }
+    val screenHeight by remember { mutableIntStateOf(context.resources.displayMetrics.heightPixels) }
     val facesList = remember { mutableStateListOf<Face>() }
     var selectedFace by remember { mutableStateOf<Face?>(null) }
-    val imageWidth = remember { mutableStateOf(0) }
+    val imageWidth = remember { mutableIntStateOf(0) }
     val capturedBitmap by viewModel.capturedImage.collectAsState()
-    val imageHeight = remember { mutableStateOf(0) }
-    var centerX by remember{ mutableStateOf(0F) }
-    var centerY by remember{ mutableStateOf(0F) }
-    var rawCenterX by remember{ mutableStateOf(0F) }
-    var rawCenterY by remember{ mutableStateOf(0F) }
-    var radius by remember {mutableStateOf(0f)}
+    val imageHeight = remember { mutableIntStateOf(0) }
+    var centerX by remember{ mutableFloatStateOf(0F) }
+    var centerY by remember{ mutableFloatStateOf(0F) }
+    var rawCenterX by remember{ mutableFloatStateOf(0F) }
+    var rawCenterY by remember{ mutableFloatStateOf(0F) }
+    var radius by remember { mutableFloatStateOf(0f) }
     var loadingCompete by remember { mutableStateOf(false) }
     val offsetX: Float by animateFloatAsState(
         if (centerX != 0F)
@@ -124,22 +124,22 @@ fun ScanSurface(
 
 
     LaunchedEffect(capturedBitmap){
-        capturedBitmap?.let {
+        capturedBitmap?.let { it ->
             stopCamera = true
             delay(1000)
             try {
                 val image = cropToBBox(it,Rect(
                     Offset(
-                        (rawCenterX - imageWidth.value/2),
-                        (rawCenterY - imageHeight.value/2)
+                        (rawCenterX - imageWidth.intValue/2),
+                        (rawCenterY - imageHeight.intValue/2)
                     ),
                     Size(
-                        (imageWidth.value).toFloat(),
-                        (imageHeight.value).toFloat()
+                        (imageWidth.intValue).toFloat(),
+                        (imageHeight.intValue).toFloat()
                     )
                 ).toAndroidRectF().toRect(),0f)
                 image?.let {
-                    it.flip(horizontal = false).getOrNull()?.let {bitmap ->
+                    it.flip(horizontal = false).getOrNull()?.let {
                         viewModel.analyze(selectedFace!!, lensFacing == CameraSelector.LENS_FACING_FRONT)
                     }
                 }
@@ -182,8 +182,8 @@ fun ScanSurface(
                         analyzer = FaceDetectionAnalyzer { faces, width, height, imageProxy ->
                             facesList.clear()
                             facesList.addAll(faces)
-                            imageWidth.value = width
-                            imageHeight.value = height
+                            imageWidth.intValue = width
+                            imageHeight.intValue = height
                             viewModel.setDetectedFacesRects(
                                 faces = faces,
                                 imageWidth = width,
@@ -212,8 +212,8 @@ fun ScanSurface(
                 Box(modifier = Modifier.fillMaxSize()) {
                     DrawFaces(
                         faces = if (stopCamera) facesList.filter { it.trackingId == selectedFace?.trackingId } else facesList,
-                        imageHeight.value,
-                        imageWidth.value,
+                        imageHeight.intValue,
+                        imageWidth.intValue,
                         screenWidth,
                         screenHeight,
                         lensFacing,
@@ -416,102 +416,115 @@ fun DrawFaces(
                     .fillMaxSize()
             ) {
                 faces.forEach { face ->
-                    val scaleFactor = min(
-                        (screenWidth + 480).toFloat() / imageWidth,
-                        screenHeight.toFloat() / imageHeight
-                    )
-                    val offsetX = (screenWidth - (imageWidth * scaleFactor)) / 2
-                    val offsetY = (screenHeight - (imageHeight * scaleFactor)) / 2
-                    val boundingBox = face.boundingBox.toComposeRect()
-                    val centerX: Float
-                    val centerY = boundingBox.center.y * scaleFactor + offsetY
-                    val radius: Float
-                    when (lens) {
-                        CameraSelector.LENS_FACING_FRONT -> {
-                            centerX =
-                                screenWidth + 480 - boundingBox.center.x * scaleFactor + offsetX
-                            radius = ((boundingBox.width / 2.0) * scaleFactor).toFloat()
-                        }
-
-                        else -> {
-                            centerX = boundingBox.center.x * scaleFactor + offsetX
-                            radius = ((boundingBox.width / 2.0) * scaleFactor).toFloat()
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .layout { measurable, constraints ->
-                                val placeable = measurable.measure(constraints)
-                                val x = centerX - placeable.width / 2
-                                val y = centerY - placeable.height / 2
-                                layout(placeable.width, placeable.height) {
-                                    placeable.placeRelative(x.roundToInt(), y.roundToInt())
-                                }
+                    if(face.headEulerAngleZ in -15f..15f){
+                        val scaleFactor = min(
+                            (screenWidth + 480).toFloat() / imageWidth,
+                            screenHeight.toFloat() / imageHeight
+                        )
+                        val offsetX = (screenWidth - (imageWidth * scaleFactor)) / 2
+                        val offsetY = (screenHeight - (imageHeight * scaleFactor)) / 2
+                        val boundingBox = face.boundingBox.toComposeRect()
+                        val centerX: Float
+                        val centerY = boundingBox.center.y * scaleFactor + offsetY
+                        val radius: Float
+                        when (lens) {
+                            CameraSelector.LENS_FACING_FRONT -> {
+                                centerX =
+                                    screenWidth + 480 - boundingBox.center.x * scaleFactor + offsetX
+                                radius = ((boundingBox.width / 2.0) * scaleFactor).toFloat()
                             }
-                    ) {
-                        Row(
+
+                            else -> {
+                                centerX = boundingBox.center.x * scaleFactor + offsetX
+                                radius = ((boundingBox.width / 2.0) * scaleFactor).toFloat()
+                            }
+                        }
+                        Box(
                             modifier = Modifier
-                                .size(((radius + radiusExt) * 2 / density).dp)
-                                .clip(CircleShape)
-                                .border(2.dp, Color.Yellow, CircleShape)
-                                .clickable {
-                                    onFaceClick.invoke(
-                                        face,
-                                        boundingBox.center.x * scaleFactor + offsetX,
-                                        screenHeight / 2 - boundingBox.center.y * scaleFactor + offsetY,
-                                        radius,
-                                        centerX,
-                                        centerY
-                                    )
+                                .layout { measurable, constraints ->
+                                    val placeable = measurable.measure(constraints)
+                                    val x = centerX - placeable.width / 2
+                                    val y = centerY - placeable.height / 2
+                                    layout(placeable.width, placeable.height) {
+                                        placeable.placeRelative(x.roundToInt(), y.roundToInt())
+                                    }
                                 }
                         ) {
+                            if (
+                                radius + centerX < screenWidth &&
+                                centerX - radius > 0 &&
+                                radius + centerY < screenHeight &&
+                                centerY-radius > 0 &&
+                                face.boundingBox.width() > 65
+                                ) {
+                                Row(
+                                    modifier = Modifier
+                                        .size(((radius + radiusExt) * 2 / density).dp)
+                                        .clip(CircleShape)
+                                        .border(2.dp, Color.Yellow, CircleShape)
+                                        .clickable {
+                                            onFaceClick.invoke(
+                                                face,
+                                                boundingBox.center.x * scaleFactor + offsetX,
+                                                screenHeight / 2 - boundingBox.center.y * scaleFactor + offsetY,
+                                                radius,
+                                                centerX,
+                                                centerY
+                                            )
+                                        }
+                                ) {
+
+                                }
+                            }
+                            AnimatedVisibility(
+                                visible = loadingCompete,
+                                enter = fadeIn(tween(500))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .size(((radius + radiusExt) * 2 / density).dp)
+                                        .clip(CircleShape)
+                                        .border(2.dp, Color.Green, CircleShape)
+                                        .clickable {
+                                            onFaceClick.invoke(
+                                                face,
+                                                boundingBox.center.x * scaleFactor + offsetX,
+                                                screenHeight / 2 - boundingBox.center.y * scaleFactor + offsetY,
+                                                radius,
+                                                centerX,
+                                                centerY
+                                            )
+                                        }
+                                ) {
+
+                                }
+
+                            }
 
                         }
-                        AnimatedVisibility(visible = loadingCompete,
-                            enter = fadeIn(tween(500))
-                            ) {
-                            Row(
+                        if (showLoader) {
+                            Box(
                                 modifier = Modifier
-                                    .size(((radius + radiusExt) * 2 / density).dp)
-                                    .clip(CircleShape)
-                                    .border(2.dp, Color.Green, CircleShape)
-                                    .clickable {
-                                        onFaceClick.invoke(
-                                            face,
-                                            boundingBox.center.x * scaleFactor + offsetX,
-                                            screenHeight / 2 - boundingBox.center.y * scaleFactor + offsetY,
-                                            radius,
-                                            centerX,
-                                            centerY
-                                        )
+                                    .layout { measurable, constraints ->
+                                        val placeable = measurable.measure(constraints)
+                                        val x = centerX - placeable.width / 2
+                                        val y = centerY - placeable.height / 2
+                                        layout(placeable.width, placeable.height) {
+                                            placeable.placeRelative(x.roundToInt(), y.roundToInt())
+                                        }
                                     }
                             ) {
-
-                            }
-                        }
-
-                    }
-                    if(showLoader) {
-                    Box(
-                        modifier = Modifier
-                            .layout { measurable, constraints ->
-                                val placeable = measurable.measure(constraints)
-                                val x = centerX - placeable.width / 2
-                                val y = centerY - placeable.height / 2
-                                layout(placeable.width, placeable.height) {
-                                    placeable.placeRelative(x.roundToInt(), y.roundToInt())
+                                AnimatedVisibility(
+                                    visible = !loadingCompete,
+                                    exit = fadeOut(tween(200))
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier
+                                            .size(((radius + radiusExt) * 2 / density).dp + 40.dp),
+                                        strokeWidth = 5.dp,
+                                        strokeCap = StrokeCap.Round
+                                    )
                                 }
-                            }
-                    ) {
-                        AnimatedVisibility(visible = !loadingCompete,
-                            exit = fadeOut(tween(200))
-                        ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier
-                                        .size(((radius + radiusExt) * 2 / density).dp + 40.dp),
-                                    strokeWidth = 5.dp,
-                                    strokeCap = StrokeCap.Round
-                                )
                             }
                         }
                     }

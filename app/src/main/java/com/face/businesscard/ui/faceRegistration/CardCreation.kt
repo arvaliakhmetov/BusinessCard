@@ -202,12 +202,12 @@ fun CardCreation(
 
                         // Calculate and draw the points on the circle
                         for (i in 0 until numPoints) {
-                            val angle = startAngle+ (i * 360f / numPoints).toFloat()
-                            val pointX = centerX + radius * kotlin.math.cos(PI * angle / 180f).toFloat()
-                            val pointY = centerY + radius * kotlin.math.sin(PI * angle / 180f).toFloat()
+                            val angle = startAngle+ (i * 360f / numPoints)
                                 drawCircle(
                                     brush = lineBrush,
-                                    center = Offset(pointX, pointY),
+                                    center = Offset(
+                                        centerX + radius * kotlin.math.cos(PI * angle / 180f).toFloat(),
+                                        centerY + radius * kotlin.math.sin(PI * angle / 180f).toFloat()),
                                     radius = 6f,
                                     style = Stroke(6f)
                                 )
