@@ -2,6 +2,7 @@ package com.face.businesscard.ui.recognized_faces_screen
 
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -54,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageBitmapConfig
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -326,6 +328,15 @@ fun defaultBitmap():ImageBitmap{
     val canvas = Canvas(bitmap)
     canvas.drawRect(0F,0F,50F,50F,redPaint)
     return bitmap
+}
+
+fun defaultBitmap1():Bitmap{
+    val bitmap = ImageBitmap(50,50, config = ImageBitmapConfig.Argb8888)
+    val redPaint = Paint()
+    redPaint.color = Color.Cyan
+    val canvas = Canvas(bitmap)
+    canvas.drawRect(0F,0F,50F,50F,redPaint)
+    return bitmap.asAndroidBitmap()
 }
 
 
