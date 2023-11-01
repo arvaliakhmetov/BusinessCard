@@ -81,33 +81,13 @@ fun HomePageScreen(
             )
           }
           composable(Screen.History.route) {
-            val data = viewModel.getSharedData()?.data
-            if (data is Pair<*, *>) {
-              val second = data.second
-              if (second is List<*>) {
-                val personList = second.filterIsInstance<Person?>()
-                BackHandler(enabled = true, onBack = {})
-                DetailScreen(
-                  personList,
-                  //navigateToRecognizedFace = viewModel::navigateToRecognizedFacesScreen
-                )
-              }
-              else{
-                DetailScreen(
-                  emptyList(),
-                  //navigateToRecognizedFace = viewModel::navigateToRecognizedFacesScreen
-                )
-              }
-            }else{
+              BackHandler(enabled = true, onBack = viewModel::navigateToHome)
               DetailScreen(
-                emptyList(),
-                //navigateToRecognizedFace = viewModel::navigateToRecognizedFacesScreen
+                navigateToRecognizedFace = viewModel::navigateToRecognizedFacesScreen
               )
-            }
-
           }
           composable(Screen.Profile.route) {
-            BackHandler(enabled = true, onBack = {})
+            BackHandler(enabled = true, onBack = viewModel::navigateToHome)
             val faces = listOf(CardInfo())
             val profileViewModel: ProfileViewModel = hiltViewModel()
             val knownFaces by profileViewModel.knownFaces.collectAsState()
@@ -126,7 +106,7 @@ fun HomePageScreen(
           composable(Screen.RecognizedFaceScreen.route){
             val data= viewModel.getSharedData()?.data
             val person = if(data is PersonDto) data else null
-            BackHandler(enabled = true, onBack = viewModel::navigateToFaceDetector)
+            BackHandler(enabled = true, onBack = viewModel::navigateToHome)
             RecognizedFacesScreen(person,viewModel::navigateToFaceDetector)
           }
         composable(Screen.FaceRegistrationScreen.route){

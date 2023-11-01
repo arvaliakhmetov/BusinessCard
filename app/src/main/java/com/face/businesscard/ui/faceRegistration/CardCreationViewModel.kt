@@ -60,6 +60,7 @@ class CardCreationViewModel @Inject constructor(
     val itemsList= MutableStateFlow(spheresOfActivity.map { it to false}.toMutableStateMap())
     val currBitmap = MutableStateFlow<Bitmap?>(null)
     val faceNotRecognised = MutableStateFlow<FaceDirection?>(null)
+    val userImage = MutableStateFlow<Bitmap?>(null)
 
     val createCardresponse = MutableStateFlow<ApiResponse<String>>(ApiResponse.Loading)
 
@@ -223,6 +224,7 @@ class CardCreationViewModel @Inject constructor(
         Log.d("NEW_AR",features.size.toString())
         val card = CardCreateDto(
             name = person.name,
+            image = userImage.value,
             second_name = person.secondName,
             description = person.description,
             company = creds.company,

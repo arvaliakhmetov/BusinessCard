@@ -29,6 +29,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberBottomSheetScaffoldState
@@ -92,6 +93,7 @@ fun RecognizedFacesScreen(
     SideEffect {
         person?.let {
             viewModel.getImage(person.id.toString())
+            viewModel.savePerson(person)
         }
     }
 
@@ -198,9 +200,17 @@ fun RecognizedFacesScreen(
                                 horizontalArrangement = Arrangement.End,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                IconButton(onClick = {}) {
+                                    Icon(
+                                        modifier = Modifier.size(32.dp),
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = null,
+                                        tint = Color.White
+                                    )
+                                }
                                 IconButton(onClick = navigateBack) {
                                     Icon(
-                                        modifier = Modifier.size(64.dp),
+                                        modifier = Modifier.size(32.dp),
                                         imageVector = ImageVector.vectorResource(R.drawable.back__1_),
                                         contentDescription = null,
                                         tint = Color.White

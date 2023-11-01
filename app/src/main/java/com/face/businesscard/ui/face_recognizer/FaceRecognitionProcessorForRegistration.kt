@@ -73,8 +73,8 @@ class FaceRecognitionProcessorForRegistration(
             }
 
             Log.d("FACECE", "${face.headEulerAngleX}f,${face.headEulerAngleY}f,${face.headEulerAngleZ}")
-            if(face.headEulerAngleX in (faceDirection!!.eulerX-7)..(faceDirection.eulerX+7)
-                && face.headEulerAngleY in (faceDirection.eulerY-7)..(faceDirection.eulerY+7)
+            if(face.headEulerAngleX in (faceDirection!!.eulerX-10)..(faceDirection.eulerX+10)
+                && face.headEulerAngleY in (faceDirection.eulerY-10)..(faceDirection.eulerY+10)
             ) {
                 val tensorImage: TensorImage = TensorImage.fromBitmap(faceBitmap)
                 val faceNetByteBuffer: ByteBuffer =

@@ -25,9 +25,21 @@ interface BusinessFaceApi {
         @Part description: MultipartBody.Part,
         @Part company: MultipartBody.Part,
         @Part jobTitle: MultipartBody.Part,
-        @Part file: MultipartBody.Part,
         @Part data: MultipartBody.Part
         ): Response<String>
+
+    @Multipart
+    @POST("/create_person/")
+    suspend fun createPersonWImage(
+        @Part name: MultipartBody.Part,
+        @Part surname: MultipartBody.Part,
+        @Part second_name: MultipartBody.Part,
+        @Part description: MultipartBody.Part,
+        @Part company: MultipartBody.Part,
+        @Part jobTitle: MultipartBody.Part,
+        @Part file: MultipartBody.Part,
+        @Part data: MultipartBody.Part
+    ): Response<String>
 
     @Multipart
     @POST("/get_best_person/")

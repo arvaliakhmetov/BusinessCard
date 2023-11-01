@@ -31,16 +31,20 @@ class ApiRepositoryImpl(
         val jobTitle = MultipartBody.Part.createFormData("jobtitle",createDto.jobtitle)
         val company = MultipartBody.Part.createFormData("company",createDto.company)
         val data =  MultipartBody.Part.createFormData("data",createDto.data)
-        Log.d("DATA_A",createDto.data)
-
         val byteArrayOutputStream = ByteArrayOutputStream()
-        val image = defaultBitmap1()
-        image.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
-        val byteArray = byteArrayOutputStream.toByteArray()
-        val requestFile = byteArray.toRequestBody("image/jpeg".toMediaTypeOrNull(), 0, byteArray.size)
-        val filePart = MultipartBody.Part.createFormData("file", "filename.jpg", requestFile)
+        val image = createDto.image
+        if(image!= null){
+            image.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
+            val requestFile = byteArray.toRequestBody("image/jpeg".toMediaTypeOrNull(), 0, byteArray.size)
+            val filePart = MultipartBody.Part.createFormData("file", "filename.jpg", requestFile)
+            api.createPersonWImage(name,surname,second_name,description,company,jobTitle,filePart,data)
+        }else{
+            api.createPerson(name,surname,second_name,description,company,jobTitle,data)
+        }
 
-        api.createPerson(name,surname,second_name,description,company,jobTitle,filePart,data)
+
+
     }
 
     override fun getPerson(feature: FeatureDto) = apiRequestHelper.apiRequestFlow{

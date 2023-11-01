@@ -4,8 +4,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.face.businesscard.api.ApiRepository
+import com.face.businesscard.api.dto.PersonDto
 import com.face.businesscard.database.dao.CardInfoRepository
 import com.face.businesscard.database.entity.CardInfo
+import com.face.businesscard.database.entity.LinkEntity
 import com.face.businesscard.ui.ApiResponse
 import com.face.businesscard.ui.BaseViewModel
 import com.face.businesscard.ui.CoroutinesErrorHandler
@@ -50,22 +52,6 @@ class RecognizedFacesViewModel @Inject constructor(
         }
     }
 
-    fun findFace(person: Person?){
-        viewModelScope.launch {
-            person?.let { _person ->
-                findNearestKnownFace(_person.faceVector)?.let { result ->
-                    if (result.second <= 0.9) {
-                        foundedFace.emit(knownFaces.value.find { it.id.toString() == result.first })
-                    }else{
-                        foundedFace.emit(CardInfo(id = _person.id.toLong(),surname = "Пользователь не найден"))
-                    }
-                }
-                currentFaceV.emit(_person)
-            }
-        }
-
-    }
-
     fun getImage(id: String) = baseRequest(
         imageResponse,
         coroutinesErrorHandler
@@ -73,27 +59,23 @@ class RecognizedFacesViewModel @Inject constructor(
         api.getImage(id)
     }
 
-    fun findNearestKnownFace(vector: FloatArray): Pair<String, Float>? {
-        val list = mutableListOf<Person?>()
-        knownFaces.value.forEach {cardInfo ->
-            cardInfo.arrayOfFeatures.forEach { floatArray ->
-                list.add(Person(cardInfo.id.toString(),floatArray,null))
-            }
+    fun savePerson(creds: PersonDto){
+        viewModelScope.launch {
+            cardInfoRepository.insertCard(
+               CardInfo(
+                    id = creds.id.toLong(),
+                    name = creds.name,
+                    surname = creds.surname,
+                    secondName = creds.second_name,
+                    company = creds.company,
+                    jobtitle = creds.jobtitile,
+                    description = creds.description,
+                    activities = creds.activities,
+                    links = creds.conts.map { LinkEntity(it.key,it.value) }.toList(),
+                    arrayOfFeatures = listOf(FloatArray(1))
+                )
+            )
+
         }
-        return list.toList()
-            .filter { person ->
-                person?.faceVector != null && vector.size == person.faceVector.size
-            }
-            .minByOrNull { person ->
-                vector.zip(person!!.faceVector)
-                    .map { (a, b) -> (a - b) * (a - b) }
-                    .sum()
-            }
-            ?.let { person ->
-                val squaredDistance = vector.zip(person.faceVector)
-                    .map { (a, b) -> (a - b) * (a - b) }
-                    .sum()
-                Pair(person.id, sqrt(squaredDistance.toDouble()).toFloat())
-            }
     }
 }

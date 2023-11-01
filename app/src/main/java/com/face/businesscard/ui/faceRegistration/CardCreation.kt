@@ -2,8 +2,13 @@ package com.face.businesscard.ui.faceRegistration
 
 
 import FaceDirection
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.os.Build
+import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.camera.core.CameraSelector
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -92,6 +97,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -105,6 +111,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.canhub.cropper.CropImageContract
+import com.canhub.cropper.CropImageContractOptions
+import com.canhub.cropper.CropImageOptions
+import com.canhub.cropper.CropImageView
 import com.face.businesscard.R
 import com.face.businesscard.ui.ApiResponse
 import com.face.businesscard.ui.Utils.LabeledInputWithDivider
@@ -142,6 +152,7 @@ fun CardCreation(
     val target by viewModel.recognitionIterator.collectAsState()
     var targetList by remember{ mutableStateOf(listOf(FaceDirection.FACE_FAR)) }
     val saveRespons by viewModel.createCardresponse.collectAsState()
+    val userImage by viewModel.userImage.collectAsState()
 
     val transition = rememberInfiniteTransition()
 
@@ -152,6 +163,35 @@ fun CardCreation(
             animation = tween(durationMillis = 500),
             repeatMode = RepeatMode.Reverse
         ), label = "asd"
+    )
+
+    val imageCropLauncher = rememberLauncherForActivityResult(
+        CropImageContract()
+    ) { result ->
+        if (result.isSuccessful) {
+            val croppedUri = result.uriContent
+            val bitmap = if (Build.VERSION.SDK_INT <= 28) {
+                MediaStore.Images.Media.getBitmap(context.contentResolver, croppedUri)
+            } else {
+                val source = ImageDecoder.createSource(context.contentResolver, croppedUri!!)
+                ImageDecoder.decodeBitmap(source)
+            }
+            bitmap?.let {
+                viewModel.userImage.value = it
+            }
+        } else {
+            // an error occurred cropping
+            val exception = result.error
+        }
+    }
+
+    val cropOptions = CropImageOptions(
+        cropShape = CropImageView.CropShape.RECTANGLE,
+        aspectRatioX = 1,
+        aspectRatioY = 1,
+        fixAspectRatio = true,
+        backgroundColor = Color.Black.toArgb(),
+        activityBackgroundColor = Color.Black.toArgb()
     )
 
     LaunchedEffect(saveRespons){
@@ -481,6 +521,44 @@ fun CardCreation(
                                 color = Color.White,
                             )
                         )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            userImage?.let {
+                                Image(
+                                    bitmap = it.asImageBitmap(),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+
+                            TextButton(
+                                onClick = {
+                                    scope.launch {
+                                        focusManager.clearFocus(force = true)
+                                        delay(400)
+                                        imageCropLauncher.launch(
+                                            CropImageContractOptions(
+                                                uri = null,
+                                                cropImageOptions = cropOptions
+                                            )
+                                        )
+                                    }
+                                }
+                            ) {
+                                Text(
+                                    text = if(userImage == null)"+ Добавить фотографию" else "Изменить фотографию",
+                                    style = TextStyle(
+                                        fontSize = 14.sp,
+                                        lineHeight = 18.sp,
+                                        fontFamily = FontFamily(Font(R.font.inter)),
+                                        fontWeight = FontWeight(400),
+                                        color = Color(0xFF858585),
+                                    ),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                         LabeledInputWithDivider(
                             labelText = "Имя*",
                             value = credsState.name,
