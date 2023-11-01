@@ -2,6 +2,7 @@ package com.face.businesscard.ui.faceRegistration
 
 import FaceDirection
 import FaceRecognitionProcessorForRegistration
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.compose.runtime.getValue
@@ -46,7 +47,9 @@ class CardCreationViewModel @Inject constructor(
         }
     }
     var faceProcessor by mutableStateOf<FaceRecognitionProcessorForRegistration?>(null)
+    val faces = mutableStateOf<List<Face>?>(null)
     val recognisedPositions = MutableStateFlow<MutableMap<String,FloatArray>>(mutableMapOf())
+    val extraArray by mutableStateOf(mutableListOf<FloatArray>())
     val recognitionIterator = MutableStateFlow(mutableListOf(FaceDirection.FACE_CENTER))
     val sizeOfrecognizedPoses = MutableStateFlow(0)
     val showLoader = MutableStateFlow(false)
@@ -55,7 +58,8 @@ class CardCreationViewModel @Inject constructor(
     val closeCamera = MutableStateFlow(false)
     val showContentFilter = MutableStateFlow(false)
     val itemsList= MutableStateFlow(spheresOfActivity.map { it to false}.toMutableStateMap())
-    val faceNotRecognised = MutableStateFlow(false)
+    val currBitmap = MutableStateFlow<Bitmap?>(null)
+    val faceNotRecognised = MutableStateFlow<FaceDirection?>(null)
 
     val createCardresponse = MutableStateFlow<ApiResponse<String>>(ApiResponse.Loading)
 
@@ -78,14 +82,16 @@ class CardCreationViewModel @Inject constructor(
             floatArray: FloatArray,
             faceDirection: FaceDirection
         ) {
+            val newList = recognitionIterator.value
             viewModelScope.launch {
-                if(recognitionIterator.value.size < 41) {
-                    recognitionIterator.value.add(FaceDirection.entries[recognitionIterator.value.size])
+                if(recognitionIterator.value.size < 28) {
+                    newList.add(FaceDirection.entries[recognitionIterator.value.size])
+                    recognitionIterator.emit(newList)
                 }
                 if(recognisedPositions.value[faceDirection.name] == null){
                     recognisedPositions.value[faceDirection.name] = floatArray
                 }
-               if(recognisedPositions.value.keys.size == 41){
+               if(recognisedPositions.value.keys.size == 28){
                    showChecksLoader()
                }
                 sizeOfrecognizedPoses.emit(recognisedPositions.value.keys.size-1)
@@ -105,20 +111,26 @@ class CardCreationViewModel @Inject constructor(
         }
     }
 
-    fun analyze(lensFacing: Int) =  FaceDetectionAccurateAnalyzer{ faces, width, height, _image ->
+    fun analyze(lensFacing: Int) =  FaceDetectionAccurateAnalyzer{ _faces, width, height, _image ->
         viewModelScope.launch {
             val currentDirection = recognitionIterator.value.last()
             val bitmap = _image.toBitmap().rotate(
                 if (lensFacing == CameraSelector.LENS_FACING_FRONT) 270F else 90F
             ).getOrNull()
-            if (faces.isNotEmpty()) {
-                bitmap?.let {
-                    faceProcessor?.detectInImage(
-                        faces,
-                        it,
-                        faceDirection = currentDirection
-                    )
-
+            faces.value = _faces
+            if (_faces.isNotEmpty()) {
+                if(_faces.last().boundingBox.width().toDouble() in width/3.2..width/2.4){
+                    faceNotRecognised.emit(null)
+                    bitmap?.let {
+                        val fa = faceProcessor?.detectInImage(
+                            _faces,
+                            it,
+                            faceDirection = currentDirection
+                        )
+                    }
+                }else{
+                    if(_faces.last().boundingBox.width().toDouble() <= width/3.2) faceNotRecognised.emit(FaceDirection.FACE_FAR)
+                    if(_faces.last().boundingBox.width().toDouble() >= width/2.4) faceNotRecognised.emit(FaceDirection.FACE_CLOSE)
                 }
             }
         }
@@ -194,20 +206,27 @@ class CardCreationViewModel @Inject constructor(
         createCardresponse,
         coroutinesErrorHandler,
     ){
+        val features = recognisedPositions.value.values
+        features.addAll(extraArray)
         val creds = credsState.value
         val person = CardInfo(
             name = creds.name,
             surname = creds.surname,
             secondName = creds.secondName,
+            company = creds.company,
+            jobtitle = creds.jobtitle,
             description = creds.description,
             activities = itemsList.value.filter { it.value == true }.keys.toList(),
             links = creds.links.values.map { LinkEntity(it.name,it.link) }.toList(),
-            arrayOfFeatures = recognisedPositions.value.values.toList()
+            arrayOfFeatures = features.toList()
         )
+        Log.d("NEW_AR",features.size.toString())
         val card = CardCreateDto(
             name = person.name,
             second_name = person.secondName,
             description = person.description,
+            company = creds.company,
+            jobtitle = creds.jobtitle,
             surname = person.surname,
             data = CardDataDto(
                 activities = person.activities,

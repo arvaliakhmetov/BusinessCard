@@ -83,7 +83,7 @@ class FaceRecognitionViewModel @Inject constructor(
     var bitmap = mutableStateOf<Bitmap?>(null)
         private set
 
-    val cashedFacesList = MutableStateFlow<List<Person?>>(emptyList())
+    val showCropError = mutableStateOf(false)
 
     private val callBack = object : FaceRecognitionProcessor.FaceRecognitionCallback{
         override fun onFaceRecognised(face: Face?, probability: Float, name: String?) {
@@ -146,11 +146,17 @@ class FaceRecognitionViewModel @Inject constructor(
     fun analyze(face: Face,flip: Boolean){
         coroutineDispatcher.launch {
                 faceProcessor?.let { processor ->
-                    val faceBox = cropToBBox(imageProxy.value!!,face.boundingBox,if(flip) 270f else 90f)!!.flip(horizontal = flip).getOrNull()
-                    val feature = processor.detectInImage(listOf(face),faceBox!! , 0F)
-                    feature?.let {
-                        Log.d("ARRAY_I", it.toList().toString())
-                        findNearestFace(feature)
+                    imageProxy.value?.let {image ->
+                        val faceBox = cropToBBox(image,face.boundingBox,if(flip) 270f else 90f )?.flip(horizontal = flip)
+                        if (faceBox?.isSuccess == true){
+                            val feature = processor.detectInImage(listOf(face),faceBox.getOrNull()!!)
+                            feature?.let {
+                                Log.d("ARRAY_I", it.toList().toString())
+                                findNearestFace(feature)
+                            }
+                        }else{
+                            showCropError.value = true
+                        }
                     }
                 }
             }
@@ -160,7 +166,6 @@ class FaceRecognitionViewModel @Inject constructor(
         recognisedFaceResponse,
         coroutinesErrorHandler
     ){
-
         apiRepository.getPerson(FeatureDto(feature = feature))
     }
     fun setDetectedFacesRects(
@@ -172,10 +177,6 @@ class FaceRecognitionViewModel @Inject constructor(
         _imageProxy: Bitmap
     ){
         viewModelScope.launch {
-            val scaleFactor = min(
-                (screenWidth + 480).toFloat() / imageWidth,
-                screenHeight.toFloat() / imageHeight
-            )
             faceRects.emit(faces.map { it.boundingBox.toComposeRect() })
             imageProxy.value = _imageProxy
         }

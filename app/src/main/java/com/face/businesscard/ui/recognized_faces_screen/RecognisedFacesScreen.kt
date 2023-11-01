@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageBitmapConfig
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -77,7 +78,6 @@ import com.face.businesscard.R
 import com.face.businesscard.api.dto.PersonDto
 import com.face.businesscard.ui.face_recognizer.Person
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RecognizedFacesScreen(
     person: PersonDto?,
@@ -142,7 +142,7 @@ fun RecognizedFacesScreen(
                         contentAlignment = Alignment.BottomStart
                     ){
                         person?.let { face ->
-                            Box(
+                            Column(
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp)
                             ) {
@@ -151,7 +151,7 @@ fun RecognizedFacesScreen(
                                             (face.name ?: "") + " " +
                                             (face.second_name ?: "")
                                 Text(
-                                    text = name1,
+                                    text = name1.removePrefix(" "),
                                     color = Color.White,
                                     style = TextStyle(
                                         fontSize = 36.sp,
@@ -160,6 +160,16 @@ fun RecognizedFacesScreen(
                                         fontWeight = FontWeight(700),
                                         color = Color.White,
                                     ),
+                                )
+                                Text(
+                                    text = "${face.jobtitile} | ${face.company} ",
+                                    style = TextStyle(
+                                        fontSize = 13.sp,
+                                        lineHeight = 14.sp,
+                                        fontFamily = FontFamily(Font(R.font.inter)),
+                                        fontWeight = FontWeight(400),
+                                        color = Color(0xFF858585),
+                                    )
                                 )
                             }
                         }
@@ -201,8 +211,6 @@ fun RecognizedFacesScreen(
                     }
                 }
                 person?.let{ face ->
-
-
                     Column(
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
@@ -237,7 +245,9 @@ fun RecognizedFacesScreen(
                         }
                         var showMore by remember { mutableStateOf(false) }
 
-                        Column {
+                        Column(
+                            modifier = Modifier.padding(top = 12.dp)
+                        ) {
                             Column(modifier = Modifier
                                 .animateContentSize(animationSpec = tween(100))
                                 .clickable(
@@ -247,7 +257,7 @@ fun RecognizedFacesScreen(
 
                                 if (showMore) {
                                     Text(
-                                        text = face.description?:"",
+                                        text = face.description,
                                         style = TextStyle(
                                             fontSize = 14.sp,
                                             lineHeight = 18.sp,

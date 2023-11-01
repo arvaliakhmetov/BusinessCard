@@ -77,13 +77,6 @@ fun ScanSurface(
     var lensFacing by remember { mutableIntStateOf(CameraSelector.LENS_FACING_BACK) }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    var currentSheetValue = remember {
-        SheetState(
-            skipPartiallyExpanded = false,
-            initialValue = SheetValue.PartiallyExpanded,
-            skipHiddenState = true,
-        )
-    }
 
     val findResponse by viewModel.recognisedFaceResponse.collectAsState()
     var stopCamera by remember { mutableStateOf(false) }
@@ -97,6 +90,7 @@ fun ScanSurface(
     var selectedFace by remember { mutableStateOf<Face?>(null) }
     val imageWidth = remember { mutableIntStateOf(0) }
     val capturedBitmap by viewModel.capturedImage.collectAsState()
+    val cropError by viewModel.showCropError
     val imageHeight = remember { mutableIntStateOf(0) }
     var centerX by remember{ mutableFloatStateOf(0F) }
     var centerY by remember{ mutableFloatStateOf(0F) }
@@ -265,50 +259,40 @@ fun ScanSurface(
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.TopCenter
+                    .padding(16.dp),
+                contentAlignment = Alignment.TopStart
             ) {
-                Column(
-                    Modifier.fillMaxSize()
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            modifier = Modifier.padding(20.dp),
-                            onClick = {
-                                // Toggle between front and back lenses
-                                lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
-                                    CameraSelector.LENS_FACING_FRONT
-                                } else {
-                                    CameraSelector.LENS_FACING_BACK
-                                }
-                            }) {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(id = R.drawable.switch_icon),
-                                tint = Color.White,
-                                contentDescription = null
-                            )
-                        }
-                        Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(20.dp),
-                            horizontalArrangement = Arrangement.End,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(onClick = navigateBack) {
-                                Icon(
-                                    modifier = Modifier.size(64.dp),
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = null,
-                                    tint = Color.White
-                                )
-                            }
-                        }
-                    }
 
+                IconButton(onClick = navigateBack) {
+                    Icon(
+                        modifier = Modifier.size(64.dp),
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                }
+
+                BoxWithConstraints(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.BottomEnd
+                ){
+                    IconButton(
+                        modifier = Modifier,
+                        onClick = {
+                            // Toggle between front and back lenses
+                            lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
+                                CameraSelector.LENS_FACING_FRONT
+                            } else {
+                                CameraSelector.LENS_FACING_BACK
+                            }
+                        }) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(id = R.drawable.switch_icon),
+                            modifier = Modifier.size(24.dp),
+                            tint = Color.White,
+                            contentDescription = null
+                        )
+                    }
                 }
             }
 
@@ -388,12 +372,12 @@ fun DrawFaces(
                             outsidePath.addOval(
                                 Rect(
                                     Offset(
-                                        (centerX - radius - radiusExt).toFloat(),
-                                        (centerY - radius - radiusExt).toFloat()
+                                        (centerX - radius - radiusExt),
+                                        (centerY - radius - radiusExt)
                                     ),
                                     Size(
-                                        (2 * (radius + radiusExt)).toFloat(),
-                                        (2 * (radius + radiusExt)).toFloat()
+                                        (2 * (radius + radiusExt)),
+                                        (2 * (radius + radiusExt))
                                     )
                                 )
                             )
@@ -416,7 +400,7 @@ fun DrawFaces(
                     .fillMaxSize()
             ) {
                 faces.forEach { face ->
-                    if(face.headEulerAngleZ in -15f..15f){
+                    if(face.headEulerAngleZ in -40f..40f){
                         val scaleFactor = min(
                             (screenWidth + 480).toFloat() / imageWidth,
                             screenHeight.toFloat() / imageHeight
@@ -451,11 +435,12 @@ fun DrawFaces(
                                 }
                         ) {
                             if (
-                                radius + centerX < screenWidth &&
-                                centerX - radius > 0 &&
-                                radius + centerY < screenHeight &&
-                                centerY-radius > 0 &&
-                                face.boundingBox.width() > 65
+                                radius + centerX < screenWidth-10 &&
+                                centerX - radius > 10 &&
+                                radius + centerY < screenHeight-10 &&
+                                centerY-radius > 10 &&
+                                face.boundingBox.width() > 65 &&
+                                radius*2< screenWidth-50
                                 ) {
                                 Row(
                                     modifier = Modifier

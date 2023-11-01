@@ -14,7 +14,7 @@ class FaceDetectionAnalyzer(
 ) : ImageAnalysis.Analyzer {
 
     private val options = FaceDetectorOptions.Builder()
-        .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+        .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
         .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
         .setMinFaceSize(2F)
         .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)

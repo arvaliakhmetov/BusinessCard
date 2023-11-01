@@ -8,6 +8,8 @@ data class PersonDto(
     val name: String,
     val surname : String,
     val second_name: String,
+    val company: String,
+    val jobtitile: String,
     val description: String,
     val activities: List<String>,
     val conts: Map<String,String>,

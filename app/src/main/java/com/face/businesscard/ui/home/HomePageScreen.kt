@@ -126,8 +126,8 @@ fun HomePageScreen(
           composable(Screen.RecognizedFaceScreen.route){
             val data= viewModel.getSharedData()?.data
             val person = if(data is PersonDto) data else null
-            BackHandler(enabled = true, onBack = viewModel::navigateToHome)
-            RecognizedFacesScreen(person,viewModel::navigateToHome)
+            BackHandler(enabled = true, onBack = viewModel::navigateToFaceDetector)
+            RecognizedFacesScreen(person,viewModel::navigateToFaceDetector)
           }
         composable(Screen.FaceRegistrationScreen.route){
           //val data= viewModel.getSharedData()!!.data as Pair<*, *>

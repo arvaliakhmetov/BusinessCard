@@ -73,21 +73,32 @@ class FaceRecognitionProcessorForRegistration(
             }
 
             Log.d("FACECE", "${face.headEulerAngleX}f,${face.headEulerAngleY}f,${face.headEulerAngleZ}")
-            val tensorImage: TensorImage = TensorImage.fromBitmap(faceBitmap)
-            val faceNetByteBuffer: ByteBuffer =
-                faceNetImageProcessor.process(tensorImage).buffer
-            val faceOutputArray = Array(1) { FloatArray(192) }
-            if(face.headEulerAngleX in (faceDirection!!.eulerX-9)..(faceDirection.eulerX+9)
-                && face.headEulerAngleY in (faceDirection.eulerY-9)..(faceDirection.eulerY+9)
+            if(face.headEulerAngleX in (faceDirection!!.eulerX-7)..(faceDirection.eulerX+7)
+                && face.headEulerAngleY in (faceDirection.eulerY-7)..(faceDirection.eulerY+7)
             ) {
+                val tensorImage: TensorImage = TensorImage.fromBitmap(faceBitmap)
+                val faceNetByteBuffer: ByteBuffer =
+                    faceNetImageProcessor.process(tensorImage).buffer
+                val faceOutputArray = Array(1) { FloatArray(192) }
                 faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
-                Log.d("currentDir_GOOD", faceDirection.name)
                 if (faceOutputArray.size >= 1) {
                     callback!!.onFaceDetected(
                         floatArray = faceOutputArray[0],
                         faceDirection
                     )
+                    return FloatArray(1)
                 }
+            }
+            if(faceDirection.name.contains(FaceDirection.FACE_EXTRA.name)){
+                val tensorImage: TensorImage = TensorImage.fromBitmap(faceBitmap)
+                val faceNetByteBuffer: ByteBuffer =
+                    faceNetImageProcessor.process(tensorImage).buffer
+                val faceOutputArray = Array(1) { FloatArray(192) }
+                faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
+                callback!!.onFaceDetected(
+                    floatArray = faceOutputArray[0],
+                    faceDirection
+                )
             }
         }
         return null
@@ -134,44 +145,33 @@ class FaceRecognitionProcessorForRegistration(
 }
 enum class FaceDirection(val eulerX:Float,val eulerY: Float){
     FACE_CENTER(0f,0f),
-    FACE_BOTTOM1(-16.772182f,1.2777171f),
-    FACE_BOTTOM2(-15.331356f,8.203784f),
-    FACE_BOTTOM3(-11.995197f,14.251421f),
-    FACE_BOTTOM4(-9.267882f,18.591719f),
-    FACE_BOTTOM5(-8.347089f,20.83218f),
-    FACE_BOTTOM_LEFT1(-7.640806f,17.674784f),
-    FACE_BOTTOM_LEFT2(-6.7679276f,21.702019f),
-    FACE_BOTTOM_LEFT3(-5.8894515f,22.982796f),
-    FACE_BOTTOM_LEFT4(-3.5228975f,27.050762f),
-    FACE_BOTTOM_LEFT5(-2.458739f,32.37705f),
-    FACE_LEFT1(4.342686f,27.130363f),
-    FACE_LEFT2(6.5351496f,27.553864f),
-    FACE_LEFT3(9.802652f,26.787552f),
-    FACE_LEFT4(10.25518f,27.200367f),
-    FACE_LEFT5(11.335956f,22.058292f),
-    FACE_LEFT_TOP1(16.904812f,18.682642f),
-    FACE_LEFT_TOP2(21.34992f,10.344861f),
-    FACE_LEFT_TOP3(22f,12f),
-    FACE_LEFT_TOP4(23f,8f),
-    FACE_LEFT_TOP5(25f,4f),
-    FACE_TOP(29.338478f,-2.2891824f),
-    FACE_TOP1(33.419968f,-4.769429f),
-    FACE_TOP2(31.742641f,-13.47013f),
-    FACE_TOP3(30.369144f,-18.208298f),
-    FACE_TOP4(26.87295f,-20.52124f),
-    FACE_TOP5(26.058212f,-22.8284f),
-    FACE_TOP_RIGHT1(19.242182f,-28.28658f),
-    FACE_TOP_RIGHT2(13.546769f,-30.70015f),
-    FACE_TOP_RIGHT3(10.390649f,-30.907042f),
-    FACE_TOP_RIGHT4(7.710272f,-29.300814f),
-    FACE_TOP_RIGHT5(4.904235f,-28.726263f),
-    FACE_RIGHT1(-2f,-34f),
-    FACE_RIGHT2(-4f,-28f),
-    FACE_RIGHT3(-6f,-22f),
-    FACE_RIGHT4(-8f,-21f),
-    FACE_RIGHT5(-10f,-20f),
-    FACE_BOTTOM_RIGHT1(-12f,-14f),
-    FACE_BOTTOM_RIGHT2(-14f,-12f),
-    FACE_BOTTOM_RIGHT3(-16f,-6f),
-    FACE_BOTTOM_RIGHT4(-20f,0f),
+    FACE_EXTRA(0f,0F),
+    FACE_TOP(20.955835f,2.4006865f),
+    FACE_EXTRA1(0f,0F),
+    FACE_BOTTOM(-16.48518f,-0.4272012f),
+    FACE_EXTRA2(0f,0F),
+    FACE_RIGHT_TOP_1(15.89366f,-26.165407f),
+    FACE_EXTRA3(0f,0F),
+    FACE_LEFT_TOP_2(24.508915f,29.851017f),
+    FACE_EXTRA4(0f,0F),
+    FACE_RIGHT_TOP_2(22.18026f,-18.73303f),
+    FACE_EXTRA5(0f,0F),
+    FACE_LEFT_TOP_1(15.581384f,29.848743f),
+    FACE_EXTRA13(0f,0F),
+    FACE_RIGHT_BOTTOM_2(-11.100148f,-13.950938f),
+    FACE_EXTRA6(0f,0F),
+    FACE_LEFT(3.5786512f,37.70429f),
+    FACE_EXTRA7(0f,0F),
+    FACE_RIGHT_BOTTOM_1(-7.0886707f,-25.108055f),
+    FACE_EXTRA8(0f,0F),
+    FACE_LEFT_BOTTOM_1(-5.69128f,29.871437f),
+    FACE_EXTRA9(0f,0F),
+    FACE_RIGHT(3.5786512f,-37.70429f),
+    FACE_EXTRA10(0f,0F),
+    FACE_LEFT_BOTTOM_2(-9.581064f,15.650003f),
+    FACE_EXTRA11(0f,0F),
+    FACE_CLOSE(0f,0f),
+    FACE_FAR(0f,0f),
+
+
 }
