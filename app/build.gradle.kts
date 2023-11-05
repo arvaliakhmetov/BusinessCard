@@ -9,15 +9,23 @@ plugins {
 }
 
 android {
-    namespace = "com.face.businesscard"
+    signingConfigs {
+        create("release") {
+            storeFile = file("C:\\Users\\secon\\petconnect.jks")
+            storePassword = "88888888"
+            keyAlias = "key0"
+            keyPassword = "88888888"
+        }
+    }
+    namespace = "com.face.businessface"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.face.businesscard"
+        applicationId = "com.face.businessface"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -32,6 +40,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

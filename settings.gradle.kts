@@ -13,6 +13,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BusinessCard"
+rootProject.name = "BusinessFace"
 include(":app")
  
