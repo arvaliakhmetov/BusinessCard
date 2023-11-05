@@ -340,7 +340,7 @@ fun RecognizedFacesScreen(
                                             context.startActivity(urlIntent)
                                         } catch (_ : Throwable){
                                             scope.launch {
-                                                Toast.makeText(context,"Укзана невалидная ссылка", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context,"Указана невалидная ссылка", Toast.LENGTH_SHORT).show()
                                             }
                                         }
 
