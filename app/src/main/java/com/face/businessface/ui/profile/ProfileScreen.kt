@@ -50,10 +50,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
-    faces: List<CardInfo>,
-    deleteCard: (Long) -> Unit,
     navigateToFaceRegistrationScreen: () ->Unit,
-){
+) {
     var loader = remember { mutableStateOf(false) }
     val scrollstate = rememberScrollState()
     val scope = rememberCoroutineScope()
@@ -70,11 +68,14 @@ fun ProfileScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { }) {
-                    Icon(imageVector = ImageVector.vectorResource(R.drawable.solar_settings_outline), contentDescription = null)
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.solar_settings_outline),
+                        contentDescription = null
+                    )
                 }
             }
         }
-    ) {innerPadding->
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -87,176 +88,43 @@ fun ProfileScreen(
                     .fillMaxWidth()
                     .padding(top = 40.dp, bottom = 32.dp)
             ) {
-                if(faces.isEmpty()) {
-                    OutlinedButton(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(80.dp)
-                            .padding(horizontal = 36.dp),
-                        shape = RectangleShape,
-                        onClick = {
-                            scope.launch {
-                                loader.value = true
-                                delay(1500)
-                                navigateToFaceRegistrationScreen.invoke()
-                            }
-                        }
-                    ) {
-                        Text(
-                            text = "Создать визитку",
-                            style = TextStyle(
-                                fontSize = 20.sp,
-                                lineHeight = 20.sp,
-                                fontFamily = FontFamily(Font(R.font.inter)),
-                                fontWeight = FontWeight(500),
-                                color = Color.White,
-                                textAlign = TextAlign.Center,
-                            )
-                        )
-                    }
-                }else{
-                    Column(modifier = Modifier
+                OutlinedButton(
+                    modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 32.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        faces.forEach {
-                            Column(modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(1.dp, Color.White, RoundedCornerShape(8.dp))
-                                .clickable {
-                                    //navigateToRecognizedface("1", listOf(Person("1", faceVector = it.arrayOfFeatures.first(),null)))
-                                }
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(
-                                        modifier = Modifier
-                                            .padding(20.dp)
-                                            .weight(1f),
-                                        text = "Визитка",
-                                        textAlign = TextAlign.Start,
-                                        style = TextStyle(
-                                            fontSize = 14.sp,
-                                            lineHeight = 18.sp,
-                                            fontFamily = FontFamily(Font(R.font.inter)),
-                                            fontWeight = FontWeight(400),
-                                            color = Color.White,
-                                            textAlign = TextAlign.Center,
-                                        )
-                                    )
-                                    IconButton(onClick = { deleteCard(it.id!!) }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = null,
-                                            tint = Color.White
-                                        )
-                                    }
-                                }
-                                Text(
-                                    modifier = Modifier
-                                        .padding(start = 20.dp, top = 5.dp),
-                                    text = it.id.toString(),
-                                    style = TextStyle(
-                                        fontSize = 12.sp,
-                                        lineHeight = 18.sp,
-                                        fontFamily = FontFamily(Font(R.font.inter)),
-                                        fontWeight = FontWeight(300),
-                                        color = Color.White,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                )
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .weight(1f)
-                                        .padding(20.dp),
-                                    verticalAlignment = Alignment.Bottom,
-                                    horizontalArrangement = Arrangement.End
-                                ) {
-                                    Text(
-                                        text = (it.surname) + " " + (it.name),
-                                        textAlign = TextAlign.End,
-                                        style = TextStyle(
-                                            fontSize = 24.sp,
-                                            lineHeight = 20.sp,
-                                            fontFamily = FontFamily(Font(R.font.inter)),
-                                            fontWeight = FontWeight(700),
-                                            color = Color.White,
-                                            textAlign = TextAlign.Right,
-                                        )
-                                    )
-
-                                }
-                            }
+                        .height(80.dp)
+                        .padding(horizontal = 36.dp),
+                    shape = RectangleShape,
+                    onClick = {
+                        scope.launch {
+                            loader.value = true
+                            delay(1500)
+                            navigateToFaceRegistrationScreen.invoke()
                         }
                     }
+                ) {
+                    Text(
+                        text = "Создать визитку",
+                        style = TextStyle(
+                            fontSize = 20.sp,
+                            lineHeight = 20.sp,
+                            fontFamily = FontFamily(Font(R.font.inter)),
+                            fontWeight = FontWeight(500),
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                        )
+                    )
                 }
             }
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .fillMaxWidth()
+
+
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                BasicTextField(
-                    value = "test@test@mail.kz",
-                    readOnly = true,
-                    onValueChange = {},
-                    textStyle = TextStyle(
-                        fontSize = 18.sp,
-                        lineHeight = 24.sp,
-                        fontFamily = FontFamily(Font(R.font.inter)),
-                        fontWeight = FontWeight(400),
-                        color = Color.White,
-                        letterSpacing = 0.15.sp,
-                    ),
-                    decorationBox = {innerTextField ->
-                        Column {
-                            innerTextField.invoke()
-                            Divider(Modifier.padding(top = 16.dp))
-                        }
-                    }
-                )
-
-                Text(
-                    modifier = Modifier
-                        .padding(top = 30.dp)
-                        .clickable {
-                        },
-                    text = "Выйти из аккаунта",
-                    style = TextStyle(
-                        fontSize = 16.sp,
-                        lineHeight = 20.sp,
-                        fontFamily = FontFamily(Font(R.font.inter)),
-                        fontWeight = FontWeight(500),
-                        color = Color(0xFF858585),
-
-                        textAlign = TextAlign.Center,
-                    )
-                )
-
-            }
-
-        }
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            if(loader.value){
-                LinearProgressIndicator()
+                if (loader.value) {
+                    LinearProgressIndicator()
+                }
             }
         }
     }
 }
-
-/*
-@Preview
-@Composable
-fun ProfilePreview(){
-    BusinessCardTheme {
-        ProfileScreen(faces = emptyList(), navigateToFaceRegistrationScreen = {})
-    }
-}*/

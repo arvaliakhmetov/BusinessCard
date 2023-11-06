@@ -99,7 +99,10 @@ fun DetailScreen(
               (person.surname.removePrefix(" ") ?: "") + " " +
                       (person.name.removePrefix(" ") ?: "") + " " +
                       (person.secondName.removePrefix(" ") ?: "")
-            val job = person.jobtitle.removePrefix(" ") + (if(person.jobtitle.removePrefix(" ").isNotEmpty())" | " else "") + person.company.removePrefix(" ")
+            val job =
+              person.jobtitle.removePrefix(" ") +
+                      (if (person.jobtitle.removePrefix(" ").isNotEmpty() && person.company.removePrefix(" ").isNotEmpty())
+                        " | " else "" ) + person.company.removePrefix(" ")
             Text(text = name1)
             Row(
               Modifier.padding(top = 4.dp),

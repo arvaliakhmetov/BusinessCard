@@ -79,13 +79,8 @@ fun HomePageScreen(
           }
           composable(Screen.Profile.route) {
             BackHandler(enabled = true, onBack = viewModel::navigateToHome)
-            val faces = listOf(CardInfo())
-            val profileViewModel: ProfileViewModel = hiltViewModel()
-            val knownFaces by profileViewModel.knownFaces.collectAsState()
             ProfileScreen(
-              faces = knownFaces,
               navigateToFaceRegistrationScreen = viewModel::navigateToFaceRegistrationScreen,
-              deleteCard = profileViewModel::deletePerson,
             )
           }
           composable(route = Screen.FaceDetector.route) {
@@ -99,7 +94,16 @@ fun HomePageScreen(
             val data= viewModel.getSharedData()?.data
             val person = if(data is PersonDto) data else null
             BackHandler(enabled = true, onBack = viewModel::navigateToHome)
-            RecognizedFacesScreen(person, onDelete=viewModel::navigateToHome,viewModel::navigateToFaceDetector)
+            RecognizedFacesScreen(person,
+              onDelete=viewModel::navigateToHome,
+              navigateBack = {
+                if(person!!.dist!= -1f){
+                  viewModel::navigateToFaceDetector.invoke()
+                } else {
+                  viewModel::navigateToDetail.invoke()
+                }
+
+              })
           }
         composable(Screen.FaceRegistrationScreen.route){
           BackHandler(enabled = true, onBack = viewModel::navigateToProfile)

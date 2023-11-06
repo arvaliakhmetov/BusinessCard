@@ -9,6 +9,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,6 +25,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -32,6 +35,7 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -61,21 +65,27 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.toLowerCase
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.face.businessface.R
 import com.face.businessface.api.dto.PersonDto
 import com.face.businessface.ui.ApiResponse
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @Composable
 fun RecognizedFacesScreen(
     person: PersonDto?,
-    onDelete:() -> Unit,
-    navigateBack:() -> Unit,
+    onDelete: () -> Unit,
+    navigateBack: () -> Unit,
     viewModel: RecognizedFacesViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -84,40 +94,56 @@ fun RecognizedFacesScreen(
     val window = LocalConfiguration.current
     val delete by viewModel.deleteResponse.collectAsState()
     var showLoader = remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var pass by remember {
+        mutableStateOf("")
+    }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        person?.let {
-            viewModel.savePerson(person)
+        person!!.let {
+            if (person.dist < 0.875 && person.dist != -1f)
+                viewModel.savePerson(person)
         }
     }
 
-    LaunchedEffect(delete){
-        if(delete is ApiResponse.Success){
+    LaunchedEffect(delete) {
+        if (delete is ApiResponse.Success) {
+            viewModel.deleteFromCash(person!!.id.toString())
+            showDeleteDialog = false
+            pass = ""
             onDelete.invoke()
         }
-        if(delete is ApiResponse.Failure){
+        if (delete is ApiResponse.Failure) {
             showLoader.value = false
-            onDelete.invoke()
+            pass = ""
+        }
+    }
+    LaunchedEffect(pass) {
+        if (pass == "Admin2023$") {
+            viewModel.deletePerson(person!!.id.toString())
         }
     }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.Black))
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    )
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black),
 
-    ) {
-        Column (
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .background(Color.Black),
-            verticalArrangement = Arrangement.Top
-        ){
+        ) {
+        if (person!!.dist < 0.963) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .background(Color.Black),
+                verticalArrangement = Arrangement.Top
+            ) {
 
                 val localDensity = LocalDensity.current
                 val gradient = Brush.verticalGradient(
@@ -147,7 +173,7 @@ fun RecognizedFacesScreen(
                             .fillMaxWidth()
                             .height((window.screenHeightDp / 2).dp),
                         contentAlignment = Alignment.BottomStart
-                    ){
+                    ) {
                         person?.let { face ->
                             Column(
                                 modifier = Modifier
@@ -158,7 +184,10 @@ fun RecognizedFacesScreen(
                                     (face.surname.removePrefix(" ") ?: "") + " " +
                                             (face.name.removePrefix(" ") ?: "") + " " +
                                             (face.second_name.removePrefix(" ") ?: "")
-                                val job = person.jobtitile.removePrefix(" ") + (if(face.jobtitile.removePrefix(" ").isNotEmpty())" | " else "") + face.company.removePrefix(" ")
+                                val job =
+                                    person.jobtitile.removePrefix(" ") +
+                                            (if (face.jobtitile.removePrefix(" ").isNotEmpty() && face.company.removePrefix(" ").isNotEmpty())
+                                     " | " else "" ) + face.company.removePrefix(" ")
                                 Text(
                                     text = name1.removePrefix(" "),
                                     color = Color.White,
@@ -207,11 +236,10 @@ fun RecognizedFacesScreen(
                                 horizontalArrangement = Arrangement.End,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                if(!showLoader.value) {
+                                if (!showLoader.value) {
                                     IconButton(onClick = {
                                         showLoader.value = true
-                                        viewModel.deleteFromCash(person!!.id.toString())
-                                        viewModel.deletePerson(person.id.toString())
+                                        showDeleteDialog = true
                                     }) {
                                         Icon(
                                             modifier = Modifier.size(32.dp),
@@ -220,7 +248,7 @@ fun RecognizedFacesScreen(
                                             tint = Color.White
                                         )
                                     }
-                                }else{
+                                } else {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(24.dp)
                                     )
@@ -237,7 +265,7 @@ fun RecognizedFacesScreen(
                         }
                     }
                 }
-                person?.let{ face ->
+                person?.let { face ->
                     Column(
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
@@ -251,8 +279,8 @@ fun RecognizedFacesScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            face.activities.forEachIndexed {i,it ->
-                                if( i!= 0 ) {
+                            face.activities.forEachIndexed { i, it ->
+                                if (i != 0) {
                                     Image(
                                         imageVector = ImageVector.vectorResource(R.drawable.tag_dot),
                                         contentDescription = null,
@@ -293,7 +321,8 @@ fun RecognizedFacesScreen(
                                             fontFamily = FontFamily(Font(R.font.inter)),
                                             fontWeight = FontWeight(400),
                                             color = Color.White
-                                        ))
+                                        )
+                                    )
                                 } else {
                                     Text(
                                         text = face.description,
@@ -335,12 +364,16 @@ fun RecognizedFacesScreen(
                                         try {
                                             val urlIntent = Intent(
                                                 Intent.ACTION_VIEW,
-                                                Uri.parse(entry.value)
+                                                Uri.parse(entry.value.lowercase(Locale.getDefault()))
                                             )
                                             context.startActivity(urlIntent)
-                                        } catch (_ : Throwable){
+                                        } catch (_: Throwable) {
                                             scope.launch {
-                                                Toast.makeText(context,"Указана невалидная ссылка", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(
+                                                    context,
+                                                    "Указана невалидная ссылка",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
                                             }
                                         }
 
@@ -361,30 +394,106 @@ fun RecognizedFacesScreen(
                     }
                 }
             }
-        }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Пользователь не найден",
+                    style = TextStyle(
+                        fontSize = 20.sp,
+                        lineHeight = 20.sp,
+                        fontFamily = FontFamily(Font(R.font.inter)),
+                        fontWeight = FontWeight(500),
+                        color = Color.White,
+                    ),
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+                IconButton(
+                    onClick = navigateBack
+                ) {
+                    Icon(
+                        modifier = Modifier.size(36.dp),
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                }
+            }
 
+        }
+        if (showDeleteDialog) {
+            Dialog(
+                onDismissRequest = {
+                    showDeleteDialog = false
+                    showLoader.value = false
+                    pass = ""
+                }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .background(Color.Black, RoundedCornerShape(5.dp))
+                        .border(
+                            0.5.dp, Color.White,
+                            RoundedCornerShape(5.dp)
+                        )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = pass,
+                            onValueChange = {
+                                pass = it
+                            },
+                            label = {
+                                Text(text = "Password")
+                            },
+                            textStyle = TextStyle(
+                                fontSize = 20.sp,
+                                lineHeight = 20.sp,
+                                fontFamily = FontFamily(Font(R.font.inter)),
+                                fontWeight = FontWeight(500),
+                                color = Color.White
+                            ),
+                            supportingText = {
+                                Text(text = "Для удаления визитки обратитесь к представителю команды Reconnect")
+                            },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Password
+                            ),
+                            visualTransformation = PasswordVisualTransformation()
+                        )
+                    }
+
+                }
+
+            }
+        }
+    }
 
 
 }
 
-fun defaultBitmap():ImageBitmap{
-    val bitmap = ImageBitmap(50,50, config = ImageBitmapConfig.Argb8888)
+fun defaultBitmap(): ImageBitmap {
+    val bitmap = ImageBitmap(50, 50, config = ImageBitmapConfig.Argb8888)
     val redPaint = Paint()
     redPaint.color = Color.Cyan
     val canvas = Canvas(bitmap)
-    canvas.drawRect(0F,0F,50F,50F,redPaint)
+    canvas.drawRect(0F, 0F, 50F, 50F, redPaint)
     return bitmap
 }
 
-fun defaultBitmap1():Bitmap{
-    val bitmap = ImageBitmap(50,50, config = ImageBitmapConfig.Argb8888)
+fun defaultBitmap1(): Bitmap {
+    val bitmap = ImageBitmap(50, 50, config = ImageBitmapConfig.Argb8888)
     val redPaint = Paint()
     redPaint.color = Color.Cyan
     val canvas = Canvas(bitmap)
-    canvas.drawRect(0F,0F,50F,50F,redPaint)
+    canvas.drawRect(0F, 0F, 50F, 50F, redPaint)
     return bitmap.asAndroidBitmap()
 }
-
 
 
 /*@Preview

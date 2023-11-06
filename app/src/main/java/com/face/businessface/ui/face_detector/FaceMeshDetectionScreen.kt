@@ -57,6 +57,7 @@ import com.google.mlkit.vision.face.Face
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.nio.MappedByteBuffer
+import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -427,6 +428,8 @@ fun DrawFaces(
                                 centerX - radius > 20 &&
                                 radius + centerY < screenHeight-10 &&
                                 centerY-radius > 10 &&
+                                abs(face.headEulerAngleX) < 15f &&
+                                abs(face.headEulerAngleY) < 20f &&
                                 face.boundingBox.width() > 85 &&
                                 radius*2< screenWidth-50 &&
                                 face.headEulerAngleZ in -19f..19f

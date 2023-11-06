@@ -33,6 +33,6 @@ fun CardInfo.toPerson(): PersonDto{
         activities = activities,
         conts = links.associate { it.name to it.link },
         description = description,
-        dist = 0f
+        dist = -1f
     )
 }
