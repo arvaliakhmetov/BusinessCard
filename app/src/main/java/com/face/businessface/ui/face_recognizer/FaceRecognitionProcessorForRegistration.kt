@@ -84,8 +84,8 @@ class FaceRecognitionProcessorForRegistration(
                     return FloatArray(1)
                 }
             }
-            else if(face.headEulerAngleX in (faceDirection.eulerX-11)..(faceDirection.eulerX+11)
-                && face.headEulerAngleY in (faceDirection.eulerY-10)..(faceDirection.eulerY+10)
+            else if(face.headEulerAngleX in (faceDirection.eulerX-10)..(faceDirection.eulerX+10)
+                && face.headEulerAngleY in (faceDirection.eulerY-9)..(faceDirection.eulerY+9)
             ) {
                 val tensorImage: TensorImage = TensorImage.fromBitmap(faceBitmap)
                 val faceNetByteBuffer: ByteBuffer =
@@ -146,25 +146,25 @@ class FaceRecognitionProcessorForRegistration(
 enum class FaceDirection(val eulerX:Float,val eulerY: Float){
     FACE_CENTER(0f,0f),
     FACE_EXTRA(0f,0F),
-    FACE_TOP(20.955835f,2.4006865f),
+    FACE_TOP(28.955835f,2.4006865f),
     FACE_EXTRA1(0f,0F),
-    FACE_BOTTOM(-20.48518f,-0.4272012f),
+    FACE_BOTTOM(-25.48518f,-0.4272012f),
     FACE_EXTRA2(0f,0F),
-    FACE_RIGHT_TOP_1(15.89366f,-29.165407f),
+    FACE_RIGHT_TOP_1(20.89366f,-32.165407f),
     FACE_EXTRA3(0f,0F),
-    FACE_LEFT_TOP_2(24.508915f,29.851017f),
+    FACE_LEFT_TOP_2(20.508915f,32.851017f),
     FACE_EXTRA4(0f,0F),
     FACE_RIGHT_TOP_2(29.18026f,-18.73303f),
     FACE_EXTRA5(0f,0F),
     FACE_LEFT_TOP_1(18.581384f,29.848743f),
     FACE_EXTRA13(0f,0F),
-    FACE_RIGHT_BOTTOM_2(-11.100148f,-13.950938f),
+    FACE_RIGHT_BOTTOM_2(-14.100148f,-17.950938f),
     FACE_EXTRA6(0f,0F),
     FACE_LEFT(3.5786512f,37.70429f),
     FACE_EXTRA7(0f,0F),
-    FACE_RIGHT_BOTTOM_1(-7.0886707f,-25.108055f),
+    FACE_RIGHT_BOTTOM_1(-14.0886707f,-25.108055f),
     FACE_EXTRA8(0f,0F),
-    FACE_LEFT_BOTTOM_1(-5.69128f,29.871437f),
+    FACE_LEFT_BOTTOM_1(-10.69128f,29.871437f),
     FACE_EXTRA9(0f,0F),
     FACE_RIGHT(3.5786512f,-37.70429f),
     FACE_EXTRA10(0f,0F),

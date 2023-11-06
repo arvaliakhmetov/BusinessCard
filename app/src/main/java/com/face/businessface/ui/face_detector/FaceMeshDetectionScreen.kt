@@ -117,8 +117,9 @@ fun ScanSurface(
         capturedBitmap?.let { it ->
             stopCamera = true
             showSwitch.value = false
-            delay(1000)
+            delay(200)
             viewModel.analyze(selectedFace!!, lensFacing == CameraSelector.LENS_FACING_FRONT)
+            delay(1000)
         }
     }
 
@@ -204,7 +205,7 @@ fun ScanSurface(
                         scope.launch {
                             selectedFace = face
                             stopCamera = true
-                            delay(800)
+                            delay(600)
                             centerX = _centerX
                             centerY = _centerY
                             radius = _radius
@@ -424,11 +425,11 @@ fun DrawFaces(
                                 }
                         ) {
                             if (
-                                radius + centerX < screenWidth-20 &&
-                                centerX - radius > 20 &&
+                                radius + centerX < screenWidth-40 &&
+                                centerX - radius > 40 &&
                                 radius + centerY < screenHeight-10 &&
                                 centerY-radius > 10 &&
-                                abs(face.headEulerAngleX) < 15f &&
+                                face.headEulerAngleX in -18f..15f &&
                                 abs(face.headEulerAngleY) < 20f &&
                                 face.boundingBox.width() > 85 &&
                                 radius*2< screenWidth-50 &&

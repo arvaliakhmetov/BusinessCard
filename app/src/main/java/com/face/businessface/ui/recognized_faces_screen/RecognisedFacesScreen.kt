@@ -136,7 +136,7 @@ fun RecognizedFacesScreen(
             .background(Color.Black),
 
         ) {
-        if (person!!.dist < 0.963) {
+        if (person!!.dist < 0.9) {
             Column(
                 Modifier
                     .fillMaxSize()

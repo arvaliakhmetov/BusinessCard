@@ -60,10 +60,6 @@ fun CameraView(
     }
     LaunchedEffect(previewView.viewPort){
         preview?.let {
-            Log.d("VIEWPORT_RATIO",preview?.resolutionInfo.toString())
-            Log.d("VIEWPORT_RATIO_HEIGHT",width.toString())
-            Log.d("VIEWPORT_RATIO",screenWidth.toString())
-
             it.resolutionInfo?.cropRect?.width()?.let { it1 ->
                 val dif = width-it1
                 val ratio = it1.toFloat()/width.toFloat()
@@ -79,7 +75,6 @@ fun CameraView(
             showScreenSHot(previewView.bitmap)
             previewView.alpha = 0f
         }else {
-            Log.d("lens", lensFacing.toString())
             val cameraSelector = CameraSelector.Builder()
                 .requireLensFacing(lensFacing)
                 .build()

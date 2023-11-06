@@ -107,10 +107,8 @@ class FaceRecognitionViewModel @Inject constructor(
         viewModelScope.launch {
             recognisedFaceResponse.collect{
                 if(it is ApiResponse.Success){
-                    Log.d("Response",it.data.toString())
                 }
                 if(it is ApiResponse.Failure){
-                    Log.d("Response",it.errorMessage.toString())
                 }
             }
         }
@@ -132,7 +130,6 @@ class FaceRecognitionViewModel @Inject constructor(
                         if (faceBox?.isSuccess == true){
                             val feature = processor.detectInImage(listOf(face),faceBox.getOrNull()!!)
                             feature?.let {
-                                Log.d("ARRAY_I", it.toList().toString())
                                 findNearestFace(feature)
                             }
                         }else{
