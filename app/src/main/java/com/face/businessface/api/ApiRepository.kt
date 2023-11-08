@@ -10,7 +10,7 @@ import okhttp3.ResponseBody
 interface ApiRepository {
     fun createPerson(
         createDto: CardCreateDto
-    ): Flow<ApiResponse<String>>
+    ): Flow<ApiResponse<ResponseBody>>
 
     fun getPerson(feature: FeatureDto): Flow<ApiResponse<PersonDto>>
 

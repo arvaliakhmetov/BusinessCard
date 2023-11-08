@@ -35,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.tensorflow.lite.Interpreter
+import rotate
 import java.nio.MappedByteBuffer
 import javax.inject.Inject
 
@@ -53,13 +54,13 @@ class FaceRecognitionViewModel @Inject constructor(
     val recognisedFaceResponse = MutableStateFlow<ApiResponse<PersonDto>>(ApiResponse.Idling)
 
     var needAnalyzer = MutableStateFlow(true)
+    val faceCatched = MutableStateFlow<Bitmap?>(null)
     var faceRects = MutableStateFlow(listOf<Rect>())
     val coroutineDispatcher = CoroutineScope(Dispatchers.Default)
     var working by mutableStateOf(false)
     val capturedImage = MutableStateFlow<Bitmap?>(null)
     var lensFacing = CameraSelector.LENS_FACING_BACK
-    var imageProxy = mutableStateOf<Bitmap?>(null)
-        private set
+    var imageProxy: Bitmap? = null
 
     var bitmap = mutableStateOf<Bitmap?>(null)
         private set
@@ -103,16 +104,6 @@ class FaceRecognitionViewModel @Inject constructor(
     val faceSLIST = MutableStateFlow<List<Person?>>(emptyList())
     val tapMatchedFace = MutableStateFlow(MatchedFaceInfo())
 
-    init {
-        viewModelScope.launch {
-            recognisedFaceResponse.collect{
-                if(it is ApiResponse.Success){
-                }
-                if(it is ApiResponse.Failure){
-                }
-            }
-        }
-    }
 
     fun saveScreen(image: Bitmap?){
         image?.let {
@@ -123,11 +114,13 @@ class FaceRecognitionViewModel @Inject constructor(
 
     @OptIn(ExperimentalGetImage::class)
     fun analyze(face: Face,flip: Boolean){
-        coroutineDispatcher.launch {
+        viewModelScope.launch {
                 faceProcessor?.let { processor ->
-                    imageProxy.value?.let {image ->
-                        val faceBox = cropToBBox(image,face.boundingBox,if(flip) 270f else 90f )?.flip(horizontal = flip)
+                    imageProxy?.let {image ->
+                        val faceBox = cropToBBox(image,face.boundingBox,if(flip) 270f else 90f)?.flip(horizontal = flip)
+                        faceCatched.value = faceBox!!.getOrNull()
                         if (faceBox?.isSuccess == true){
+                            Log.d("dist", face.headEulerAngleZ.toString())
                             val feature = processor.detectInImage(listOf(face),faceBox.getOrNull()!!)
                             feature?.let {
                                 findNearestFace(feature)
@@ -155,8 +148,8 @@ class FaceRecognitionViewModel @Inject constructor(
         _imageProxy: Bitmap
     ){
         viewModelScope.launch {
-            faceRects.emit(faces.map { it.boundingBox.toComposeRect() })
-            imageProxy.value = _imageProxy
+            //faceRects.emit(faces.map { it.boundingBox.toComposeRect() })
+            imageProxy = _imageProxy
         }
 
     }
@@ -168,7 +161,7 @@ class FaceRecognitionViewModel @Inject constructor(
 
 fun cropToBBox(_image: Bitmap, boundingBox: android.graphics.Rect, rotation: Float): Bitmap? {
     var image = _image
-    val shift = 0
+    val shift = 2
     Log.d("CropToBBox", "BoundingBox: $boundingBox")
     Log.d("CropToBBox", "Image Dimensions: ${image.width} x ${image.height}")
     Log.d("CropToBBox", "Rotation: $rotation")

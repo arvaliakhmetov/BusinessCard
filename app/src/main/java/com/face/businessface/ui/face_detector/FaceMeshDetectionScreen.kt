@@ -1,5 +1,6 @@
 package com.face.businessface.ui.face_detector
 
+import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalZeroShutterLag
 import androidx.compose.animation.AnimatedVisibility
@@ -56,6 +57,7 @@ import com.face.businessface.ui.face_detector.analyzer.FaceDetectionAnalyzer
 import com.google.mlkit.vision.face.Face
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import rotate
 import java.nio.MappedByteBuffer
 import kotlin.math.abs
 import kotlin.math.min
@@ -77,7 +79,7 @@ fun ScanSurface(
     val findResponse by viewModel.recognisedFaceResponse.collectAsState()
     var stopCamera by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val imageCaptureUseCase = viewModel.imageCapture
+    val faceCatched by viewModel.faceCatched.collectAsState()
     val neyro = viewModel.faceProcessor
     val screenWidth by remember { mutableIntStateOf(context.resources.displayMetrics.widthPixels) }
     val screenHeight by remember { mutableIntStateOf(context.resources.displayMetrics.heightPixels) }
@@ -305,11 +307,18 @@ fun DrawFaces(
     val alpha: Float by animateFloatAsState(if (stopCamera && faces.size == 1) 1f else 0.5f, label = "bg_alpha", animationSpec = tween(800))
     val radiusExt: Float by animateFloatAsState(if (stopCamera && faces.size == 1) 10f else 0f, label = "bg_radExt", animationSpec = tween(500))
     var showLoader by remember { mutableStateOf(false) }
+    var hasClickableFace by remember{ mutableStateOf(false) }
+    val context = LocalContext.current
 
     LaunchedEffect(stopCamera){
         if (stopCamera){
             delay(800)
             showLoader = true
+        }
+    }
+    LaunchedEffect(hasClickableFace){
+        if(hasClickableFace){
+            Toast.makeText(context,"Тапните по выделенному лицу", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -390,7 +399,7 @@ fun DrawFaces(
                     .fillMaxSize()
             ) {
                 faces.forEach { face ->
-                    if(face.headEulerAngleZ in -40f..40f){
+                    if(face.headEulerAngleZ in -30f..30f){
                         val scaleFactor = min(
                             (screenWidth + viewPortCor).toFloat() / imageWidth,
                             screenHeight.toFloat() / imageHeight
@@ -425,16 +434,17 @@ fun DrawFaces(
                                 }
                         ) {
                             if (
-                                radius + centerX < screenWidth-40 &&
-                                centerX - radius > 40 &&
+                                radius + centerX < screenWidth-30 &&
+                                centerX - radius > 30 &&
                                 radius + centerY < screenHeight-10 &&
                                 centerY-radius > 10 &&
-                                face.headEulerAngleX in -18f..15f &&
-                                abs(face.headEulerAngleY) < 20f &&
-                                face.boundingBox.width() > 85 &&
-                                radius*2< screenWidth-50 &&
+                                face.headEulerAngleX in -20f..20f &&
+                                abs(face.headEulerAngleY) < 25f &&
+                                face.boundingBox.width() > 80 &&
+                                radius*2< screenWidth-40 &&
                                 face.headEulerAngleZ in -19f..19f
                                 ) {
+                                hasClickableFace = true
                                 Row(
                                     modifier = Modifier
                                         .size(((radius + radiusExt) * 2 / density).dp)
@@ -453,6 +463,8 @@ fun DrawFaces(
                                 ) {
 
                                 }
+                            }else{
+                                hasClickableFace = false
                             }
                             AnimatedVisibility(
                                 visible = loadingCompete,

@@ -32,6 +32,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -102,7 +105,7 @@ fun RecognizedFacesScreen(
 
     LaunchedEffect(Unit) {
         person!!.let {
-            if (person.dist < 0.875 && person.dist != -1f)
+            if (person.dist < 0.93 && person.dist != -1f)
                 viewModel.savePerson(person)
         }
     }
@@ -136,12 +139,13 @@ fun RecognizedFacesScreen(
             .background(Color.Black),
 
         ) {
-        if (person!!.dist < 0.9) {
+        if (person!!.dist < 0.93) {
             Column(
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .background(Color.Black),
+                    .background(Color.Black)
+                    .padding(bottom = 20.dp),
                 verticalArrangement = Arrangement.Top
             ) {
 
@@ -392,6 +396,19 @@ fun RecognizedFacesScreen(
                             }
                         }
                     }
+                }
+            }
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxSize().padding(bottom = 12.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Button(
+                    onClick = { /*TODO*/ },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFDE38)
+                    )
+                ) {
+                    Text(text = "Перевод RUB")
                 }
             }
         } else {

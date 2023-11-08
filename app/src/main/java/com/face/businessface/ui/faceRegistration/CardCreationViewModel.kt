@@ -26,6 +26,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import okhttp3.ResponseBody
 import org.tensorflow.lite.Interpreter
 import rotate
 import java.nio.MappedByteBuffer
@@ -52,13 +53,14 @@ class CardCreationViewModel @Inject constructor(
     val showCredsScreen = MutableStateFlow(false)
     val credsState = MutableStateFlow(CreditsState())
     val closeCamera = MutableStateFlow(false)
+    var faceFlagExtra by mutableStateOf(false)
     val showContentFilter = MutableStateFlow(false)
     val itemsList= MutableStateFlow(spheresOfActivity.map { it to false}.toMutableStateMap())
     val currBitmap = MutableStateFlow<Bitmap?>(null)
     val faceNotRecognised = MutableStateFlow<FaceDirection?>(null)
     val userImage = MutableStateFlow<Bitmap?>(null)
 
-    val createCardresponse = MutableStateFlow<ApiResponse<String>>(ApiResponse.Loading)
+    val createCardresponse = MutableStateFlow<ApiResponse<ResponseBody>>(ApiResponse.Loading)
 
 
     fun updateSelection(pair: Pair<String,Boolean>) {
@@ -81,14 +83,14 @@ class CardCreationViewModel @Inject constructor(
         ) {
             val newList = recognitionIterator.value
             viewModelScope.launch {
-                if(recognitionIterator.value.size < 30) {
+                if(recognitionIterator.value.size < 53) {
                     newList.add(FaceDirection.entries[recognitionIterator.value.size])
                     recognitionIterator.emit(newList)
                 }
                 if(recognisedPositions.value[faceDirection.name] == null){
                     recognisedPositions.value[faceDirection.name] = floatArray
                 }
-               if(recognisedPositions.value.keys.size == 30){
+               if(recognisedPositions.value.keys.size == 53){
                    showChecksLoader()
                }
                 sizeOfrecognizedPoses.emit(recognisedPositions.value.keys.size-1)
@@ -127,16 +129,29 @@ class CardCreationViewModel @Inject constructor(
             if (_faces.isNotEmpty()) {
                 if(_faces.last().boundingBox.width().toDouble() in width/3.2..width/2.4){
                     faceNotRecognised.emit(null)
-                    bitmap?.let {
-                        val fa = faceProcessor?.detectInImage(
-                            _faces,
-                            it,
-                            faceDirection = currentDirection
-                        )
+                    if(currentDirection.name.contains(FaceDirection.FACE_EXTRA.name)){
+                        faceFlagExtra = !faceFlagExtra
+                        if(faceFlagExtra) {
+                            bitmap?.let {
+                                faceProcessor?.detectInImage(
+                                    _faces,
+                                    it,
+                                    faceDirection = currentDirection
+                                )
+                            }
+                        }
+                    }else {
+                        bitmap?.let {
+                            faceProcessor?.detectInImage(
+                                _faces,
+                                it,
+                                faceDirection = currentDirection
+                            )
+                        }
                     }
                 }else{
-                    if(_faces.last().boundingBox.width().toDouble() <= width/3.2) faceNotRecognised.emit(FaceDirection.FACE_FAR)
-                    if(_faces.last().boundingBox.width().toDouble() >= width/2.2) faceNotRecognised.emit(FaceDirection.FACE_CLOSE)
+                    if(_faces.last().boundingBox.width().toDouble() <= width/3.4) faceNotRecognised.emit(FaceDirection.FACE_FAR)
+                    if(_faces.last().boundingBox.width().toDouble() >= width/1.8) faceNotRecognised.emit(FaceDirection.FACE_CLOSE)
                 }
             }
         }

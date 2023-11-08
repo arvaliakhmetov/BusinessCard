@@ -15,8 +15,7 @@ class FaceDetectionAnalyzer(
 
     private val options = FaceDetectorOptions.Builder()
         .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
-        .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
-        .setMinFaceSize(2F)
+        .setMinFaceSize(0.9F)
         .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
         .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
         .enableTracking()
@@ -27,7 +26,7 @@ class FaceDetectionAnalyzer(
 
     override fun analyze(imageProxy: ImageProxy) {
             imageProxy.image?.let {_image ->
-                val image = InputImage.fromMediaImage(_image, imageProxy.imageInfo.rotationDegrees,)
+                val image = InputImage.fromMediaImage(_image, imageProxy.imageInfo.rotationDegrees)
                 faceDetector.process(image)
                     .addOnFailureListener {
                         imageProxy.close()

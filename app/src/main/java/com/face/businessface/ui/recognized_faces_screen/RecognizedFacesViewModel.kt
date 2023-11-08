@@ -31,24 +31,8 @@ class RecognizedFacesViewModel @Inject constructor(
         }
     }
 
-    val imageResponse = MutableStateFlow<ApiResponse<ResponseBody>>(ApiResponse.Idling)
     val deleteResponse = MutableStateFlow<ApiResponse<ResponseBody>>(ApiResponse.Idling)
 
-    val foundedFace = MutableStateFlow<CardInfo?>(null)
-    val currentFaceV = MutableStateFlow<Person?>(null)
-    val knownFaces = MutableStateFlow<List<CardInfo>>(emptyList())
-
-    init {
-        viewModelScope.launch {
-            val faces = cardInfoRepository.getKnownFaces().first()
-            /*cardInfoRepository.insertCard(faces.find { it.name == "Артур" }!!.copy(
-                secondName = "Раушанович"
-            ))*/
-            knownFaces.value = faces
-
-            Log.d("Face_known",knownFaces.value.toString())
-        }
-    }
 
     fun deleteFromCash(id: String){
         viewModelScope.launch {

@@ -22,7 +22,7 @@ interface BusinessFaceApi {
         @Part company: MultipartBody.Part,
         @Part jobTitle: MultipartBody.Part,
         @Part data: MultipartBody.Part
-        ): Response<String>
+        ): Response<ResponseBody>
 
     @Multipart
     @POST("/create_person/")
@@ -35,7 +35,7 @@ interface BusinessFaceApi {
         @Part jobTitle: MultipartBody.Part,
         @Part file: MultipartBody.Part,
         @Part data: MultipartBody.Part
-    ): Response<String>
+    ): Response<ResponseBody>
 
     @Multipart
     @POST("/get_best_person/")

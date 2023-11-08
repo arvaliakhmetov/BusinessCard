@@ -183,6 +183,9 @@ fun CardCreation(
             navigateToMain.invoke()
 
         }
+        if(saveRespons is ApiResponse.Failure){
+            Toast.makeText(context,"Проверьте подключение к интернету",Toast.LENGTH_SHORT).show()
+        }
     }
     LaunchedEffect(target){
         targetList = target
@@ -737,7 +740,6 @@ fun CardCreation(
                                 FilledTonalButton(
                                     onClick = {
                                         viewModel.saveCard()
-                                        navigateToMain.invoke()
                                     }
                                 ) {
                                     Text(text = "Создать визитку",
