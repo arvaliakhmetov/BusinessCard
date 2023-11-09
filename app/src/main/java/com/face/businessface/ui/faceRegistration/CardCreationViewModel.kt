@@ -128,9 +128,9 @@ class CardCreationViewModel @Inject constructor(
             faces.value = _faces
             if (_faces.isNotEmpty()) {
                     faceNotRecognised.emit(null)
-                    if(currentDirection.name.contains(FaceDirection.FACE_EXTRA.name)){
+                    if(currentDirection.name.contains(FaceDirection.FACE_EXTRA.name)) {
                         faceFlagExtra = !faceFlagExtra
-                        if(faceFlagExtra) {
+                        if (faceFlagExtra) {
                             bitmap?.let {
                                 faceProcessor?.detectInImage(
                                     _faces,
@@ -138,6 +138,7 @@ class CardCreationViewModel @Inject constructor(
                                     faceDirection = currentDirection
                                 )
                             }
+                        }
                     }else {
                         bitmap?.let {
                             faceProcessor?.detectInImage(
@@ -147,11 +148,7 @@ class CardCreationViewModel @Inject constructor(
                             )
                         }
                     }
-                }else{
-                    if(_faces.last().boundingBox.width().toDouble() <= width/3.2) faceNotRecognised.emit(FaceDirection.FACE_FAR)
-                    if(_faces.last().boundingBox.width().toDouble() >= width/1.6) faceNotRecognised.emit(FaceDirection.FACE_CLOSE)
                 }
-            }
         }
     }
     fun setRecognitionModel(recognitionModel: MappedByteBuffer) {
