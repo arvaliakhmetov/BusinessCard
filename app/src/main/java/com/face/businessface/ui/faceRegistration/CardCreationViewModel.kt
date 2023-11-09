@@ -127,7 +127,6 @@ class CardCreationViewModel @Inject constructor(
             ).getOrNull()
             faces.value = _faces
             if (_faces.isNotEmpty()) {
-                if(_faces.last().boundingBox.width().toDouble() in width/3.2..width/1.6){
                     faceNotRecognised.emit(null)
                     if(currentDirection.name.contains(FaceDirection.FACE_EXTRA.name)){
                         faceFlagExtra = !faceFlagExtra
@@ -139,7 +138,6 @@ class CardCreationViewModel @Inject constructor(
                                     faceDirection = currentDirection
                                 )
                             }
-                        }
                     }else {
                         bitmap?.let {
                             faceProcessor?.detectInImage(
