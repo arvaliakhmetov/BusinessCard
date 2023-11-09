@@ -70,15 +70,7 @@ fun ProfileScreen(
     var showDialog by remember{ mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
-    LaunchedEffect(pass){
-        if(pass == "Admin2023$") {
-            focusManager.clearFocus(true)
-            showDialog = false
-            Toast.makeText(context,"Создание визитки разблокировано",Toast.LENGTH_SHORT).show()
-            delay(500)
-            navigateToFaceRegistrationScreen.invoke()
-        }
-    }
+
     Scaffold(
         modifier = Modifier
             .background(Color.Black)
@@ -119,7 +111,7 @@ fun ProfileScreen(
                         .padding(horizontal = 36.dp),
                     shape = RectangleShape,
                     onClick = {
-                        showDialog = true
+                        navigateToFaceRegistrationScreen.invoke()
                     }
                 ) {
                     Text(

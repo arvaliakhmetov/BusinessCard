@@ -127,7 +127,7 @@ class CardCreationViewModel @Inject constructor(
             ).getOrNull()
             faces.value = _faces
             if (_faces.isNotEmpty()) {
-                if(_faces.last().boundingBox.width().toDouble() in width/3.2..width/2.4){
+                if(_faces.last().boundingBox.width().toDouble() in width/3.2..width/1.6){
                     faceNotRecognised.emit(null)
                     if(currentDirection.name.contains(FaceDirection.FACE_EXTRA.name)){
                         faceFlagExtra = !faceFlagExtra
@@ -150,8 +150,8 @@ class CardCreationViewModel @Inject constructor(
                         }
                     }
                 }else{
-                    if(_faces.last().boundingBox.width().toDouble() <= width/3.4) faceNotRecognised.emit(FaceDirection.FACE_FAR)
-                    if(_faces.last().boundingBox.width().toDouble() >= width/1.8) faceNotRecognised.emit(FaceDirection.FACE_CLOSE)
+                    if(_faces.last().boundingBox.width().toDouble() <= width/3.2) faceNotRecognised.emit(FaceDirection.FACE_FAR)
+                    if(_faces.last().boundingBox.width().toDouble() >= width/1.6) faceNotRecognised.emit(FaceDirection.FACE_CLOSE)
                 }
             }
         }
