@@ -61,15 +61,12 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
-    navigateToFaceRegistrationScreen: () ->Unit,
+    component: ProfileScreenComponent
 ) {
     var loader = remember { mutableStateOf(false) }
     val scrollstate = rememberScrollState()
-    val scope = rememberCoroutineScope()
     var pass by remember { mutableStateOf("") }
     var showDialog by remember{ mutableStateOf(false) }
-    val focusManager = LocalFocusManager.current
-    val context = LocalContext.current
 
     Scaffold(
         modifier = Modifier
@@ -110,9 +107,7 @@ fun ProfileScreen(
                         .height(80.dp)
                         .padding(horizontal = 36.dp),
                     shape = RectangleShape,
-                    onClick = {
-                        navigateToFaceRegistrationScreen.invoke()
-                    }
+                    onClick = component::navigateToFaceCreation
                 ) {
                     Text(
                         text = "Создать визитку",

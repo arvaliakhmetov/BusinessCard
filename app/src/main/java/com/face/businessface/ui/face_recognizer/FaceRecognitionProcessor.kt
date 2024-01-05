@@ -22,19 +22,11 @@ import kotlin.math.sqrt
 
 class FaceRecognitionProcessor(
     faceNetModelInterpreter: Interpreter,
-    private val callback: FaceRecognitionCallback?,
 ) : VisionBaseProcessor<List<Face?>?>() {
-    interface FaceRecognitionCallback {
-        fun onFaceRecognised(face: Face?, probability: Float, name: String?)
-        fun onFaceDetected(face: Face?, faceBitmap: Bitmap?, vector: FloatArray?)
-    }
 
     private val faceNetModelInterpreter: Interpreter
     private val faceNetImageProcessor: ImageProcessor
-    var recognisedFaceList: MutableList<Person?> = mutableListOf()
-
     init {
-        // initialize processors
         this.faceNetModelInterpreter = faceNetModelInterpreter
         faceNetImageProcessor = ImageProcessor.Builder()
             .add(
@@ -67,75 +59,8 @@ class FaceRecognitionProcessor(
         faceNetModelInterpreter.run(faceNetByteBuffer, faceOutputArray)
         Log.d("GraphicOverlay", "${faceOutputArray[0]}")
         return faceOutputArray[0]
-
     }
 
-    // looks for the nearest vector in the dataset (using L2 norm)
-    // and returns the pair <name, distance>
-    private fun findNearestFace(vector: FloatArray): Pair<String, Float>? {
-        return recognisedFaceList
-                .filter { person ->
-                    person?.faceVector != null && vector.size == person.faceVector.size
-                }
-                .minByOrNull { person ->
-                    vector.zip(person!!.faceVector)
-                        .map { (a, b) -> (a - b) * (a - b) }
-                        .sum()
-                }
-                ?.let { person ->
-                    val squaredDistance = vector.zip(person.faceVector)
-                        .map { (a, b) -> (a - b) * (a - b) }
-                        .sum()
-                    Pair(person.id, sqrt(squaredDistance.toDouble()).toFloat())
-                }
-    }
-    /*fun findNearestKnownFace(vector: FloatArray): Pair<String, Float>? {
-        return knownFaces
-            .filter { person ->
-                person?.faceVector != null && vector.size == person.faceVector.size
-            }
-            .minByOrNull { person ->
-                vector.zip(person!!.faceVector)
-                    .map { (a, b) -> (a - b) * (a - b) }
-                    .sum()
-            }
-            ?.let { person ->
-                val squaredDistance = vector.zip(person.faceVector)
-                    .map { (a, b) -> (a - b) * (a - b) }
-                    .sum()
-                Pair(person.id, sqrt(squaredDistance.toDouble()).toFloat())
-            }
-    }*/
-
-    fun cropToBBox(_image: Bitmap, boundingBox: Rect, rotation:Float): Bitmap? {
-        var image = _image
-        val shift = 0
-        Log.d("CropToBBox", "BoundingBox: $boundingBox")
-        Log.d("CropToBBox", "Image Dimensions: ${image.width} x ${image.height}")
-        Log.d("CropToBBox", "Rotation: $rotation")
-        if (rotation != 0f) {
-            val matrix = Matrix()
-            matrix.postRotate(rotation)
-            image = Bitmap.createBitmap(image, 0, 0, image.width, image.height, matrix, true)
-        }
-        return if (boundingBox.top >= 0 && boundingBox.bottom <= image.width && boundingBox.top + boundingBox.height() <= image.height && boundingBox.left >= 0 && boundingBox.left + boundingBox.width() <= image.width
-        ) {
-            Bitmap.createBitmap(
-                image,
-                boundingBox.left,
-                boundingBox.top + shift,
-                boundingBox.width(),
-                boundingBox.height()
-            )
-        } else null
-    }
-
-    // Register a name against the vector
-    fun registerFace(input: String, tempVector: FloatArray?,faceBitmap: Bitmap?) {
-        faceBitmap?.let {
-            recognisedFaceList.add(tempVector?.let { Person(input, it,faceBitmap?.asImageBitmap()) })
-        }
-    }
 
     companion object {
         private const val TAG = "FaceRecognitionProcessor"

@@ -10,7 +10,6 @@ import com.face.businessface.database.CardDatabase
 import com.face.businessface.database.dao.CardInfoRepository
 import com.face.businessface.database.dao.CardInfoRepositoryImpl
 import com.face.businessface.navigation.Navigator
-import com.face.businessface.navigation.SharedDataRepository
 import com.face.businessface.ui.ApiRequestHelper
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
@@ -70,13 +69,8 @@ object AppModule {
             .baseUrl(RemoteConsts.BASE_URL)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaTypeOrNull()!!))
 
-    @Provides
-    @Singleton
-    fun provideNavigator(): Navigator = Navigator()
 
-    @Provides
-    @Singleton
-    fun provideSharedData(): SharedDataRepository = SharedDataRepository()
+
 
     @Singleton
     @Provides

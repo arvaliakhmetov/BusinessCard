@@ -2,7 +2,6 @@ package com.face.businessface.ui.recognized_faces_screen
 
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
@@ -31,9 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -43,7 +40,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,14 +48,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.ImageBitmapConfig
-import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -70,32 +60,29 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.toLowerCase
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import com.arkivanov.decompose.extensions.compose.jetpack.subscribeAsState
 import com.face.businessface.R
-import com.face.businessface.api.dto.PersonDto
-import com.face.businessface.ui.ApiResponse
+import com.face.businessface.mvi.Action
+import com.face.businessface.ui.face_detector.RecognitionScreenAction
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.reflect.KFunction1
 
 @Composable
 fun RecognizedFacesScreen(
-    person: PersonDto?,
-    onDelete: () -> Unit,
-    navigateBack: () -> Unit,
-    viewModel: RecognizedFacesViewModel = hiltViewModel()
+    component: RecognizedFaceComponent,
+    onAction: (action: RecognizedFaceScreenAction) -> Unit,
 ) {
+    val state by component.state.subscribeAsState()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val horizontal = rememberScrollState()
     val window = LocalConfiguration.current
-    val delete by viewModel.deleteResponse.collectAsState()
     var showLoader = remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var pass by remember {
@@ -103,28 +90,9 @@ fun RecognizedFacesScreen(
     }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        person!!.let {
-            if (person.dist < 0.93 && person.dist != -1f)
-                viewModel.savePerson(person)
-        }
-    }
-
-    LaunchedEffect(delete) {
-        if (delete is ApiResponse.Success) {
-            viewModel.deleteFromCash(person!!.id.toString())
-            showDeleteDialog = false
-            pass = ""
-            onDelete.invoke()
-        }
-        if (delete is ApiResponse.Failure) {
-            showLoader.value = false
-            pass = ""
-        }
-    }
     LaunchedEffect(pass) {
-        if (pass == "Admin2023$") {
-            viewModel.deletePerson(person!!.id.toString())
+        if (pass == "DELETE") {
+            onAction(RecognizedFaceScreenAction.OnDelete)
         }
     }
 
@@ -139,7 +107,7 @@ fun RecognizedFacesScreen(
             .background(Color.Black),
 
         ) {
-        if (person!!.dist < 0.93) {
+        if (state.person?.id != -1L) {
             Column(
                 Modifier
                     .fillMaxSize()
@@ -161,15 +129,14 @@ fun RecognizedFacesScreen(
                         .background(Color.DarkGray),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    person?.let {
-                        AsyncImage(
+                    state.person?.let {
+                        /*AsyncImage(
                             model = "http://154.194.53.89:8000/get_image/?id=${it.id}",
                             contentDescription = null,
                             modifier = Modifier
                                 .height((window.screenHeightDp / 2).dp),
                             contentScale = ContentScale.FillHeight
-                        )
-
+                        )*/
                     }
                     BoxWithConstraints(
                         modifier = Modifier
@@ -178,7 +145,7 @@ fun RecognizedFacesScreen(
                             .height((window.screenHeightDp / 2).dp),
                         contentAlignment = Alignment.BottomStart
                     ) {
-                        person?.let { face ->
+                        state.person?.let { face ->
                             Column(
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp)
@@ -189,7 +156,7 @@ fun RecognizedFacesScreen(
                                             (face.name.removePrefix(" ") ?: "") + " " +
                                             (face.second_name.removePrefix(" ") ?: "")
                                 val job =
-                                    person.jobtitile.removePrefix(" ") +
+                                    state.person!!.jobtitile.removePrefix(" ") +
                                             (if (face.jobtitile.removePrefix(" ").isNotEmpty() && face.company.removePrefix(" ").isNotEmpty())
                                      " | " else "" ) + face.company.removePrefix(" ")
                                 Text(
@@ -226,7 +193,11 @@ fun RecognizedFacesScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(
-                                onClick = navigateBack
+                                onClick = {
+                                    scope.launch {
+                                        onAction(RecognizedFaceScreenAction.OnClose)
+                                    }
+                                }
                             ) {
                                 Icon(
                                     modifier = Modifier.size(36.dp),
@@ -242,7 +213,6 @@ fun RecognizedFacesScreen(
                             ) {
                                 if (!showLoader.value) {
                                     IconButton(onClick = {
-                                        showLoader.value = true
                                         showDeleteDialog = true
                                     }) {
                                         Icon(
@@ -257,19 +227,24 @@ fun RecognizedFacesScreen(
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
-                                IconButton(onClick = navigateBack) {
+                                IconButton(onClick = {
+                                    state.person?.let {
+                                        onAction(RecognizedFaceScreenAction.OnFavoriteClick)
+                                    }
+
+                                }) {
                                     Icon(
                                         modifier = Modifier.size(32.dp),
                                         imageVector = ImageVector.vectorResource(R.drawable.back__1_),
                                         contentDescription = null,
-                                        tint = Color.White
+                                        tint = if(state.person != null && state.person!!.favorite) Color.Red else Color.White
                                     )
                                 }
                             }
                         }
                     }
                 }
-                person?.let { face ->
+                state.person?.let { face ->
                     Column(
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
@@ -399,7 +374,9 @@ fun RecognizedFacesScreen(
                 }
             }
             BoxWithConstraints(
-                modifier = Modifier.fillMaxSize().padding(bottom = 12.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 12.dp),
                 contentAlignment = Alignment.BottomCenter
             ) {
                 Button(
@@ -429,7 +406,9 @@ fun RecognizedFacesScreen(
                     modifier = Modifier.padding(bottom = 24.dp)
                 )
                 IconButton(
-                    onClick = navigateBack
+                    onClick = {
+                        onAction(RecognizedFaceScreenAction.OnClose)
+                    }
                 ) {
                     Icon(
                         modifier = Modifier.size(36.dp),
@@ -449,6 +428,7 @@ fun RecognizedFacesScreen(
                     pass = ""
                 }
             ) {
+                showLoader.value = true
                 Column(
                     modifier = Modifier
                         .background(Color.Black, RoundedCornerShape(5.dp))
@@ -476,7 +456,7 @@ fun RecognizedFacesScreen(
                                 color = Color.White
                             ),
                             supportingText = {
-                                Text(text = "Для удаления визитки обратитесь к представителю команды Reconnect")
+                                Text(text = "Для удаления визитки напишите DELETE")
                             },
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Password
@@ -490,43 +470,4 @@ fun RecognizedFacesScreen(
             }
         }
     }
-
-
 }
-
-fun defaultBitmap(): ImageBitmap {
-    val bitmap = ImageBitmap(50, 50, config = ImageBitmapConfig.Argb8888)
-    val redPaint = Paint()
-    redPaint.color = Color.Cyan
-    val canvas = Canvas(bitmap)
-    canvas.drawRect(0F, 0F, 50F, 50F, redPaint)
-    return bitmap
-}
-
-fun defaultBitmap1(): Bitmap {
-    val bitmap = ImageBitmap(50, 50, config = ImageBitmapConfig.Argb8888)
-    val redPaint = Paint()
-    redPaint.color = Color.Cyan
-    val canvas = Canvas(bitmap)
-    canvas.drawRect(0F, 0F, 50F, 50F, redPaint)
-    return bitmap.asAndroidBitmap()
-}
-
-
-/*@Preview
-@Composable
-fun RecognizedFacesScreenPreview(){
-    MaterialTheme(
-        colorScheme = LightColorScheme,
-    ) {
-        val bitmap = ImageBitmap(50,50, config = ImageBitmapConfig.Argb8888)
-        val redPaint = Paint()
-        redPaint.color = Color.Cyan
-        val canvas = Canvas(bitmap)
-        canvas.drawRect(0F,0F,50F,50F,redPaint)
-        RecognizedFacesScreen(
-            "1",
-            listOf(Person("1",FloatArray(1),bitmap))
-        ){}
-    }
-}*/

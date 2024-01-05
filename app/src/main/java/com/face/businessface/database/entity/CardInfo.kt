@@ -15,6 +15,7 @@ data class CardInfo(
     val description: String = "",
     val jobtitle: String = "",
     val company: String = "",
+    val favorite: Boolean = false,
     val activities: List<String> = emptyList(),
     val links: List<LinkEntity> = emptyList(),
     val arrayOfFeatures: List<FloatArray> = emptyList(),
@@ -24,15 +25,25 @@ data class CardInfo(
 
 fun CardInfo.toPerson(): PersonDto{
     return PersonDto(
-        id = id!!.toInt(),
+        id = id?:-1,
         name = name,
         surname = surname,
         second_name = secondName,
         company = company,
+        favorite = favorite,
         jobtitile = jobtitle,
         activities = activities,
         conts = links.associate { it.name to it.link },
         description = description,
         dist = -1f
     )
+}
+fun List<CardInfo>.toMappedFeatures(): List<kotlin.Pair<Long,FloatArray>> {
+    val listOfpairs = mutableListOf<kotlin.Pair<Long,FloatArray>>()
+    this.forEach { cardInfo ->
+        cardInfo.arrayOfFeatures.forEach {floatArray ->
+            listOfpairs.add(kotlin.Pair(cardInfo.id!!, floatArray))
+        }
+    }
+    return listOfpairs
 }

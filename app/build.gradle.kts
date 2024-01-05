@@ -42,6 +42,9 @@ android {
             )
             signingConfig = signingConfigs.getByName("release")
         }
+        getByName("debug") {
+            isDebuggable = false
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -129,5 +132,9 @@ dependencies {
     implementation ("org.tensorflow:tensorflow-lite:2.12.0")
     implementation ("org.tensorflow:tensorflow-lite-gpu:2.12.0")
     implementation ("org.tensorflow:tensorflow-lite-support:0.4.3")
+
+
+    implementation("com.arkivanov.decompose:decompose:2.2.0-alpha03")
+    implementation("com.arkivanov.decompose:extensions-compose-jetpack:2.2.0-alpha03")
 
 }

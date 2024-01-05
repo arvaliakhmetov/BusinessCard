@@ -1,9 +1,10 @@
 package com.face.businessface.ui.home
 
-import androidx.activity.compose.BackHandler
+import FaceRecognitionProcessor
+import android.Manifest
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Icon
@@ -11,125 +12,78 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.face.businessface.api.dto.PersonDto
-import com.face.businessface.database.entity.CardInfo
-import com.face.businessface.navigation.NavigationViewModel
+import com.arkivanov.decompose.extensions.compose.jetpack.stack.Children
+import com.arkivanov.decompose.extensions.compose.jetpack.stack.animation.fade
+import com.arkivanov.decompose.extensions.compose.jetpack.stack.animation.slide
+import com.arkivanov.decompose.extensions.compose.jetpack.stack.animation.stackAnimation
+import com.arkivanov.decompose.extensions.compose.jetpack.subscribeAsState
+import com.face.businessface.navigation.RootComponent
 import com.face.businessface.navigation.Navigator
-import com.face.businessface.navigation.Screen
-import com.face.businessface.ui.details.DetailScreen
-import com.face.businessface.ui.details.DetailsScreenViewModel
-import com.face.businessface.ui.faceRegistration.FaceRegistration
-import com.face.businessface.ui.face_detector.FaceDetector
+import com.face.businessface.ui.details.HistoryScreen
+import com.face.businessface.ui.faceRegistration.FaceCreationComponent
+import com.face.businessface.ui.faceRegistration.FaceCreationScreen
+import com.face.businessface.ui.face_detector.RecognitionScreen
 import com.face.businessface.ui.profile.ProfileScreen
-import com.face.businessface.ui.profile.ProfileViewModel
 import com.face.businessface.ui.recognized_faces_screen.RecognizedFacesScreen
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.FileUtil
 
 
 @Composable
 fun HomePageScreen(
-  viewModel: NavigationViewModel = hiltViewModel(),
-  detailViewModel: DetailsScreenViewModel = hiltViewModel()
+  root: RootComponent,
 ) {
-  val context = LocalContext.current
-  val navController = rememberNavController()
-  val showNavBar by viewModel.isNavbarVisible.collectAsState()
-  var currentTab by remember { mutableStateOf(Navigator.NavTarget.Home) }
-  val recognitionModel = FileUtil.loadMappedFile(context, "mobile_face_net.tflite")
-
-
-  LaunchedEffect("navigation") {
-    viewModel.sharedFlow.onEach { navTarget ->
-      if (navTarget != currentTab) navController.navigate(navTarget.label)
-      currentTab = navTarget
-    }.launchIn(this)
+  val childStack by root.childStack.subscribeAsState()
+  Children(
+    modifier = Modifier.fillMaxSize(),
+    animation = stackAnimation(fade(),true),
+    stack = childStack
+  ) { child ->
+    when(val instance = child.instance) {
+      is RootComponent.Child.MainScreen -> MainScreen(instance.component)
+      is RootComponent.Child.FaceRecognitionScreen -> RecognitionScreen(instance.component.state,instance.component::onAction)
+      is RootComponent.Child.HistoryScreen -> HistoryScreen(instance.component)
+      is RootComponent.Child.ProfileScreen -> ProfileScreen(instance.component)
+      is RootComponent.Child.FaceCreationScreen -> FaceCreationScreen(
+        component =instance.component
+      )
+      is RootComponent.Child.RecognizedFaceScreen -> RecognizedFacesScreen(
+        component = instance.component,
+        onAction = instance.component::onAction
+      )
+    }
+    root.showNavBar
   }
-  Column (modifier = Modifier.fillMaxSize()){
-    Box(modifier = Modifier.weight(1f)) {
-      NavHost(
-        navController = navController,
-        startDestination = Screen.Home.route,
+    if(childStack.active.instance is RootComponent.Child.MainScreen ||
+      childStack.active.instance is RootComponent.Child.HistoryScreen ||
+      childStack.active.instance is RootComponent.Child.ProfileScreen){
+      BoxWithConstraints(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter
       ) {
-
-          composable(Screen.Home.route) {
-            viewModel.getSharedData()
-            BackHandler(enabled = true, onBack = {})
-            HomeScreen(
-              navigateToFaceDetector = viewModel::navigateToFaceDetector,
-            )
-          }
-          composable(Screen.History.route) {
-              BackHandler(enabled = true, onBack = viewModel::navigateToHome)
-              DetailScreen(
-                navigateToRecognizedFace = viewModel::navigateToRecognizedFacesScreen,
-              )
-          }
-          composable(Screen.Profile.route) {
-            BackHandler(enabled = true, onBack = viewModel::navigateToHome)
-            ProfileScreen(
-              navigateToFaceRegistrationScreen = viewModel::navigateToFaceRegistrationScreen,
-            )
-          }
-          composable(route = Screen.FaceDetector.route) {
-            FaceDetector(
-              recognitionModel = recognitionModel,
-              navigateBack = viewModel::navigateToHome,
-              navigateToRecognizedFacesScreen = viewModel::navigateToRecognizedFacesScreen
-            )
-          }
-          composable(Screen.RecognizedFaceScreen.route){
-            val data= viewModel.getSharedData()?.data
-            val person = if(data is PersonDto) data else null
-            BackHandler(enabled = true, onBack = viewModel::navigateToHome)
-            RecognizedFacesScreen(person,
-              onDelete=viewModel::navigateToHome,
-              navigateBack = {
-                if(person!!.dist!= -1f){
-                  viewModel::navigateToFaceDetector.invoke()
-                } else {
-                  viewModel::navigateToDetail.invoke()
-                }
-
+        NavigationBar(
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          NavBarItem.entries.forEach { item ->
+            NavigationBarItem(
+              selected = false,
+              onClick = {
+                root.selectNavBar(item)
+              },
+              icon = {
+                Icon(imageVector = item.icon, contentDescription = item.name)
               })
           }
-        composable(Screen.FaceRegistrationScreen.route){
-          BackHandler(enabled = true, onBack = viewModel::navigateToProfile)
-          FaceRegistration(
-            recognitionModel,
-            viewModel::navigateToProfile
-          )
-        }
-
-      }
-    }
-    AnimatedVisibility(visible = showNavBar) {
-      NavigationBar(
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        NavBarItems.values().forEach { item ->
-          NavigationBarItem(
-            selected = currentTab.name == item.name,
-            onClick = {
-              viewModel.selectOnNavigationBar(item)
-            },
-            icon = {
-              Icon(imageVector = item.icon, contentDescription = item.name)
-            })
         }
       }
     }
   }
-}

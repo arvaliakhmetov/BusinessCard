@@ -20,7 +20,6 @@ class FaceRecognitionProcessorForRegistration(
     faceNetModelInterpreter: Interpreter,
     private val callback: FaceRecognitionCallback?
 ) : VisionBaseProcessor<List<Face?>?>() {
-    inner class Person(var faceVector: FloatArray,)
     interface FaceRecognitionCallback {
         fun onFaceRecognised(face: Face?, probability: Float, name: String?)
         fun onFaceDetected(floatArray: FloatArray,faceDirection: FaceDirection)
@@ -28,7 +27,6 @@ class FaceRecognitionProcessorForRegistration(
 
     private val faceNetModelInterpreter: Interpreter
     private val faceNetImageProcessor: ImageProcessor
-    var recognisedFaceDirectionsMap: MutableMap<String,FloatArray> = mutableMapOf()
 
     init {
         // initialize processors
@@ -104,10 +102,6 @@ class FaceRecognitionProcessorForRegistration(
         return null
     }
 
-    // looks for the nearest vector in the dataset (using L2 norm)
-    // and returns the pair <name, distance>
-
-
     private fun cropToBBox(_image: Bitmap, boundingBox: Rect, rotation: Int): Bitmap? {
         var image = _image
         val shift = 0
@@ -126,13 +120,6 @@ class FaceRecognitionProcessorForRegistration(
                 boundingBox.height()
             )
         } else null
-    }
-
-    // Register a name against the vector
-    fun registerFace(faceDirection: FaceDirection, tempVector: FloatArray) {
-        if(!recognisedFaceDirectionsMap.keys.contains(faceDirection.name)){
-            recognisedFaceDirectionsMap[faceDirection.name] = tempVector
-        }
     }
 
     companion object {
@@ -199,6 +186,4 @@ enum class FaceDirection(val eulerX:Float,val eulerY: Float){
     ANGLE_SMILE(0f,0.3F),
     FACE_CLOSE(0f,0f),
     FACE_FAR(0f,0f),
-
-
 }

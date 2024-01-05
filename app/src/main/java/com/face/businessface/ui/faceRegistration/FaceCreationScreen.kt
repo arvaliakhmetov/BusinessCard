@@ -6,7 +6,6 @@ import android.graphics.ImageDecoder
 import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.camera.core.CameraSelector
 import androidx.camera.view.PreviewView
@@ -84,7 +83,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -93,13 +91,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
 import com.canhub.cropper.CropImageView
 import com.face.businessface.R
-import com.face.businessface.ui.ApiResponse
 import com.face.businessface.ui.Utils.LabeledInputWithDivider
 import com.face.businessface.ui.face_detector.CameraView
 import kotlinx.coroutines.delay
@@ -111,31 +107,29 @@ import java.nio.MappedByteBuffer
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
-fun CardCreation(
-    recognitionModel: MappedByteBuffer,
-    navigateToMain: () -> Unit,
-    viewModel: CardCreationViewModel = hiltViewModel()
+fun FaceCreationScreen(
+    component: FaceCreationComponent
 ){
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showCamera = remember{ mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     var lensFacing by remember{ mutableIntStateOf(CameraSelector.LENS_FACING_FRONT) }
-    val loading by viewModel.showLoader.collectAsState()
-    val credsStep by viewModel.showCredsScreen.collectAsState()
-    val closeCamera by viewModel.closeCamera.collectAsState()
+    val loading by component.showLoader.collectAsState()
+    val credsStep by component.showCredsScreen.collectAsState()
+    val closeCamera by component.closeCamera.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0){3}
-    val credsState by viewModel.credsState.collectAsState()
-    val showContentFilter by viewModel.showContentFilter.collectAsState()
-    val itemsList by viewModel.itemsList.collectAsState()
+    val credsState by component.credsState.collectAsState()
+    val showContentFilter by component.showContentFilter.collectAsState()
+    val itemsList by component.itemsList.collectAsState()
     val scrollState = rememberScrollState()
-    val faceNotRecognized by viewModel.faceNotRecognised.collectAsState()
+    val faceNotRecognized by component.faceNotRecognised.collectAsState()
     val focusManager = LocalFocusManager.current
-    val target by viewModel.recognitionIterator.collectAsState()
+    val target by component.recognitionIterator.collectAsState()
     var targetList by remember{ mutableStateOf(listOf(FaceDirection.FACE_FAR)) }
-    val saveRespons by viewModel.createCardresponse.collectAsState()
-    val userImage by viewModel.userImage.collectAsState()
-    val smile by viewModel.smile.collectAsState()
+    val saveRespons by component.createCardresponse.collectAsState()
+    val userImage by component.userImage.collectAsState()
+    val smile by component.smile.collectAsState()
 
     val transition = rememberInfiniteTransition()
 
@@ -160,7 +154,7 @@ fun CardCreation(
                 ImageDecoder.decodeBitmap(source)
             }
             bitmap?.let {
-                viewModel.userImage.value = it
+                component.userImage.value = it
             }
         } else {
             // an error occurred cropping
@@ -177,16 +171,7 @@ fun CardCreation(
         activityBackgroundColor = Color.Black.toArgb()
     )
 
-    LaunchedEffect(saveRespons){
-        if(saveRespons is ApiResponse.Success){
-            Toast.makeText(context,"Визитка успешно создана",Toast.LENGTH_SHORT).show()
-            navigateToMain.invoke()
 
-        }
-        if(saveRespons is ApiResponse.Failure){
-            Toast.makeText(context,"Проверьте подключение к интернету",Toast.LENGTH_SHORT).show()
-        }
-    }
     LaunchedEffect(target){
         targetList = target
     }
@@ -194,7 +179,7 @@ fun CardCreation(
 
     SideEffect {
         scope.launch {
-            if (viewModel.faceProcessor == null) viewModel.setRecognitionModel(recognitionModel)
+            if (component.faceProcessor == null) component.setRecognitionModel()
             showCamera.value = true
         }
     }
@@ -215,7 +200,7 @@ fun CardCreation(
                     if(showCamera.value) {
                         CameraView(
                             context = context,
-                            analyzer = viewModel.analyze(lensFacing),
+                            analyzer = component.analyze(lensFacing),
                             lensFacing = lensFacing,
                             lifecycleOwner = lifecycleOwner,
                             cameraExit = closeCamera,
@@ -431,7 +416,7 @@ fun CardCreation(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(onClick =navigateToMain) {
+                            IconButton(onClick = component::navigateOnSave) {
                                 Icon(
                                     modifier = Modifier.size(64.dp),
                                     imageVector = Icons.Default.Close,
@@ -501,7 +486,7 @@ fun CardCreation(
                     topBar = {
                         IconButton(
                             modifier = Modifier.padding(vertical = 16.dp),
-                            onClick = navigateToMain
+                            onClick = component::navigateOnSave
                         ) {
                             Icon(
                                 imageVector = Icons.Sharp.Close,
@@ -522,7 +507,7 @@ fun CardCreation(
                                         focusManager.clearFocus(true)
                                         delay(200)
                                         pagerState.animateScrollToPage(2)
-                                        viewModel.showContentFilter()
+                                        component.showContentFilter()
                                     }
                                 }
                             ) {
@@ -606,7 +591,7 @@ fun CardCreation(
                             labelText = "Имя*",
                             value = credsState.name,
                             hint = "Иван",
-                            onValueChange = { viewModel.setCreds(credsState.copy(name = it)) },
+                            onValueChange = { component.setCreds(credsState.copy(name = it)) },
                             singleLine = true,
                             readOnly = false
                         )
@@ -615,7 +600,7 @@ fun CardCreation(
                             value = credsState.surname,
                             hint = "Иванов",
                             singleLine = true,
-                            onValueChange = { viewModel.setCreds(credsState.copy(surname = it)) },
+                            onValueChange = { component.setCreds(credsState.copy(surname = it)) },
                             readOnly = false
                         )
                         LabeledInputWithDivider(
@@ -623,7 +608,7 @@ fun CardCreation(
                             value = credsState.secondName,
                             hint = "Иванович",
                             singleLine = true,
-                            onValueChange = { viewModel.setCreds(credsState.copy(secondName = it)) },
+                            onValueChange = { component.setCreds(credsState.copy(secondName = it)) },
                             readOnly = false
                         )
                         LabeledInputWithDivider(
@@ -631,7 +616,7 @@ fun CardCreation(
                             value = credsState.company,
                             hint = "ОАО ТРЕСТИНВЕСТ",
                             singleLine = true,
-                            onValueChange = { viewModel.setCreds(credsState.copy(company = it)) },
+                            onValueChange = { component.setCreds(credsState.copy(company = it)) },
                             readOnly = false
                         )
                         LabeledInputWithDivider(
@@ -639,7 +624,7 @@ fun CardCreation(
                             value = credsState.jobtitle,
                             hint = "Менеджер",
                             singleLine = true,
-                            onValueChange = { viewModel.setCreds(credsState.copy(jobtitle = it)) },
+                            onValueChange = { component.setCreds(credsState.copy(jobtitle = it)) },
                             readOnly = false
                         )
                         LabeledInputWithDivider(
@@ -647,7 +632,7 @@ fun CardCreation(
                             value = credsState.description,
                             hint = "Главный заместитель чат бота \"Олег\" в Тинькофф...",
                             singleLine = false,
-                            onValueChange = { viewModel.setCreds(credsState.copy(description = it)) },
+                            onValueChange = { component.setCreds(credsState.copy(description = it)) },
                             readOnly = false
                         )
                         Text(
@@ -667,7 +652,7 @@ fun CardCreation(
                             ) {
                                 Text(text = i.toString())
                                 Spacer(modifier = Modifier.weight(1f))
-                                IconButton(onClick = { viewModel.deleteLink(i)}) {
+                                IconButton(onClick = { component.deleteLink(i)}) {
                                     Icon(imageVector = Icons.Default.Close, contentDescription = null, tint = Color.White)
                                 }
                             }
@@ -677,7 +662,7 @@ fun CardCreation(
                                 hint = "Курс: 1 миллион за секунду",
                                 singleLine = true,
                                 onValueChange = {
-                                        viewModel.addNameToLink(i, it)
+                                        component.addNameToLink(i, it)
                                 },
                                 readOnly = false
                             )
@@ -687,13 +672,13 @@ fun CardCreation(
                                 hint = "https://www.google.com/",
                                 singleLine = true,
                                 onValueChange = {
-                                    viewModel.addLinkToLink(i, it)
+                                    component.addLinkToLink(i, it)
 
                                 },
                                 readOnly = false
                             )
                         }
-                        TextButton(onClick = viewModel::createLink) {
+                        TextButton(onClick = component::createLink) {
                             Text(
                                 text = "+ Добавить",
                                 style = TextStyle(
@@ -739,7 +724,7 @@ fun CardCreation(
                             ) {
                                 FilledTonalButton(
                                     onClick = {
-                                        viewModel.saveCard()
+                                        component.saveCard()
                                     }
                                 ) {
                                     Text(text = "Создать визитку",
@@ -804,7 +789,7 @@ fun CardCreation(
                                         )
                                         .border(1.dp, Color.White, RoundedCornerShape(20.dp))
                                         .clickable {
-                                            viewModel.updateSelection(
+                                            component.updateSelection(
                                                 item
                                                     .toPair()
                                                     .copy(second = !item.value)

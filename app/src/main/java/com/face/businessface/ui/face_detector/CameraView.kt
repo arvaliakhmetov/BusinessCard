@@ -43,10 +43,8 @@ fun CameraView(
             analyzer?.let {
                 setAnalyzer(cameraExecutor, analyzer)
             }
-
         }
     }
-    val screenWidth by remember { mutableIntStateOf(context.resources.displayMetrics.widthPixels) }
     val width  = context.resources.displayMetrics.heightPixels
     var preview by remember { mutableStateOf<Preview?>(null) }
     val executor = ContextCompat.getMainExecutor(context)

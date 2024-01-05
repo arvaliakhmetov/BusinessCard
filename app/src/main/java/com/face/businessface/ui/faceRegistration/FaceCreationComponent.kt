@@ -10,18 +10,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateMap
 import androidx.lifecycle.viewModelScope
-import com.face.businessface.api.ApiRepository
-import com.face.businessface.api.dto.CardCreateDto
-import com.face.businessface.api.dto.CardDataDto
-import com.face.businessface.api.dto.toJSONString
+import com.arkivanov.decompose.ComponentContext
+import com.face.businessface.database.dao.CardInfoRepository
 import com.face.businessface.database.entity.CardInfo
 import com.face.businessface.database.entity.LinkEntity
+import com.face.businessface.navigation.componentCoroutineScope
 import com.face.businessface.ui.ApiResponse
-import com.face.businessface.ui.BaseViewModel
-import com.face.businessface.ui.CoroutinesErrorHandler
+import com.face.businessface.ui.mvicore.CoroutinesErrorHandler
 import com.face.businessface.ui.face_detector.analyzer.FaceDetectionAccurateAnalyzer
 import com.google.mlkit.vision.face.Face
-import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -32,16 +30,14 @@ import rotate
 import java.nio.MappedByteBuffer
 import javax.inject.Inject
 
-@HiltViewModel
-class CardCreationViewModel @Inject constructor(
-    private val api:ApiRepository
-): BaseViewModel() {
+class FaceCreationComponent (
+    private val model: MappedByteBuffer,
+    componentContext: ComponentContext,
+    private val cardInfoRepository: CardInfoRepository,
+    private val onSaveCard:(id:Long)-> Unit
+): ComponentContext by componentContext {
 
-    private val coroutinesErrorHandler = object : CoroutinesErrorHandler {
-        override fun onError(message: String) {
 
-        }
-    }
     var faceProcessor by mutableStateOf<FaceRecognitionProcessorForRegistration?>(null)
     val faces = mutableStateOf<List<Face>?>(null)
     val recognisedPositions = MutableStateFlow<MutableMap<String,FloatArray>>(mutableMapOf())
@@ -56,13 +52,12 @@ class CardCreationViewModel @Inject constructor(
     var faceFlagExtra by mutableStateOf(false)
     val showContentFilter = MutableStateFlow(false)
     val itemsList= MutableStateFlow(spheresOfActivity.map { it to false}.toMutableStateMap())
-    val currBitmap = MutableStateFlow<Bitmap?>(null)
     val faceNotRecognised = MutableStateFlow<FaceDirection?>(null)
     val userImage = MutableStateFlow<Bitmap?>(null)
-
     val createCardresponse = MutableStateFlow<ApiResponse<ResponseBody>>(ApiResponse.Loading)
 
 
+    fun navigateOnSave() = onSaveCard
     fun updateSelection(pair: Pair<String,Boolean>) {
         if(itemsList.value.values.count { it == true } <= 2 || !pair.second){
             itemsList.value[pair.first] = pair.second
@@ -82,7 +77,7 @@ class CardCreationViewModel @Inject constructor(
             faceDirection: FaceDirection
         ) {
             val newList = recognitionIterator.value
-            viewModelScope.launch {
+            componentCoroutineScope().launch {
                 if(recognitionIterator.value.size < 53) {
                     newList.add(FaceDirection.entries[recognitionIterator.value.size])
                     recognitionIterator.emit(newList)
@@ -99,7 +94,7 @@ class CardCreationViewModel @Inject constructor(
     }
 
     init {
-        viewModelScope.launch {
+        componentCoroutineScope().launch {
             credsState.collect{credits ->
                 if( credits.name.isNotEmpty() &&
                     credits.description.isNotEmpty() &&
@@ -117,7 +112,7 @@ class CardCreationViewModel @Inject constructor(
     }
 
     fun analyze(lensFacing: Int) =  FaceDetectionAccurateAnalyzer{ _faces, width, height, _image ->
-        viewModelScope.launch {
+        componentCoroutineScope().launch {
             val currentDirection = recognitionIterator.value.last()
             if(currentDirection.name == FaceDirection.ANGLE_SMILE.name){
                 smile.emit(true)
@@ -151,12 +146,12 @@ class CardCreationViewModel @Inject constructor(
                 }
         }
     }
-    fun setRecognitionModel(recognitionModel: MappedByteBuffer) {
-        faceProcessor = FaceRecognitionProcessorForRegistration(Interpreter(recognitionModel),callBack)
+    fun setRecognitionModel() {
+        faceProcessor = FaceRecognitionProcessorForRegistration(Interpreter(model),callBack)
     }
 
     fun showChecksLoader(){
-        viewModelScope.launch {
+        componentCoroutineScope().launch {
             closeCamera.emit(true)
             showLoader.emit(true)
             delay(2000)
@@ -166,7 +161,7 @@ class CardCreationViewModel @Inject constructor(
     }
 
     fun createLink(){
-        viewModelScope.launch {
+        componentCoroutineScope().launch {
             val creds = credsState.first()
             val newMap = creds.links.toMutableMap()
             newMap[creds.links.size+1] = Link()
@@ -176,7 +171,7 @@ class CardCreationViewModel @Inject constructor(
         }
     }
     fun deleteLink(index: Int){
-        viewModelScope.launch {
+        componentCoroutineScope().launch {
             val creds = credsState.first()
             val newMap = creds.links.toMutableMap()
             newMap.remove(index)
@@ -187,7 +182,7 @@ class CardCreationViewModel @Inject constructor(
     }
 
     fun addNameToLink(position: Int,name: String){
-        viewModelScope.launch {
+        componentCoroutineScope().launch {
             val creds = credsState.first()
             val newMap = creds.links.toMutableMap()
             newMap[position] = newMap[position]!!.copy(name = name)
@@ -198,7 +193,7 @@ class CardCreationViewModel @Inject constructor(
     }
 
     fun addLinkToLink(position: Int,link: String) {
-        viewModelScope.launch {
+        componentCoroutineScope().launch {
             val creds = credsState.first()
             val newMap = creds.links.toMutableMap()
             newMap[position] = newMap[position]!!.copy(link = link)
@@ -208,49 +203,34 @@ class CardCreationViewModel @Inject constructor(
         }
     }
     fun setCreds(creds: CreditsState){
-        viewModelScope.launch{
+        componentCoroutineScope().launch{
             credsState.emit(creds)
         }
     }
 
     fun showContentFilter(){
-        viewModelScope.launch {
+        componentCoroutineScope().launch {
             showCredsScreen.emit(false)
         }
     }
-    fun saveCard() = baseRequest(
-        createCardresponse,
-        coroutinesErrorHandler,
-    ){
-        val features = recognisedPositions.value.values
-        features.addAll(extraArray)
-        val creds = credsState.value
-        val person = CardInfo(
-            name = creds.name,
-            surname = creds.surname,
-            secondName = creds.secondName,
-            company = creds.company,
-            jobtitle = creds.jobtitle,
-            description = creds.description,
-            activities = itemsList.value.filter { it.value == true }.keys.toList(),
-            links = creds.links.values.map { LinkEntity(it.name,it.link) }.toList(),
-            arrayOfFeatures = features.toList()
-        )
-        Log.d("NEW_AR",features.size.toString())
-        val card = CardCreateDto(
-            name = person.name,
-            image = userImage.value,
-            second_name = person.secondName,
-            description = person.description,
-            company = creds.company,
-            jobtitle = creds.jobtitle,
-            surname = person.surname,
-            data = CardDataDto(
-                activities = person.activities,
-                contacts = person.links.map { it.name to it.link }.toMap(),
-                features = person.arrayOfFeatures
-            ).toJSONString()
-        )
-        api.createPerson(card)
+    fun saveCard(){
+        componentCoroutineScope().launch {
+            val features = recognisedPositions.value.values
+            features.addAll(extraArray)
+            val creds = credsState.value
+            val person = CardInfo(
+                name = creds.name,
+                surname = creds.surname,
+                secondName = creds.secondName,
+                company = creds.company,
+                jobtitle = creds.jobtitle,
+                description = creds.description,
+                activities = itemsList.value.filter { it.value == true }.keys.toList(),
+                links = creds.links.values.map { LinkEntity(it.name, it.link) }.toList(),
+                arrayOfFeatures = features.toList()
+            )
+            cardInfoRepository.insertCard(person)
+            navigateOnSave()
+        }
     }
 }
