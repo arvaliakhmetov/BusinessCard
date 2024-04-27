@@ -64,14 +64,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.arkivanov.decompose.extensions.compose.jetpack.subscribeAsState
 import com.face.businessface.R
-import com.face.businessface.mvi.Action
-import com.face.businessface.ui.face_detector.RecognitionScreenAction
 import kotlinx.coroutines.launch
 import java.util.Locale
-import kotlin.reflect.KFunction1
 
 @Composable
 fun RecognizedFacesScreen(
@@ -85,13 +81,11 @@ fun RecognizedFacesScreen(
     val window = LocalConfiguration.current
     var showLoader = remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var pass by remember {
-        mutableStateOf("")
-    }
+    var pass by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(pass) {
-        if (pass == "DELETE") {
+        if ( pass == "DELETE" ) {
             onAction(RecognizedFaceScreenAction.OnDelete)
         }
     }

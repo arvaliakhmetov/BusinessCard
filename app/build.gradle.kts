@@ -9,14 +9,6 @@ plugins {
 }
 
 android {
-    signingConfigs {
-        create("release") {
-            storeFile = file("C:\\Users\\secon\\petconnect.jks")
-            storePassword = "88888888"
-            keyAlias = "key0"
-            keyPassword = "88888888"
-        }
-    }
     namespace = "com.face.businessface"
     compileSdk = 34
 
@@ -40,10 +32,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            isDebuggable = false
         }
         getByName("debug") {
-            isDebuggable = false
+            isDebuggable = true
         }
     }
     compileOptions {

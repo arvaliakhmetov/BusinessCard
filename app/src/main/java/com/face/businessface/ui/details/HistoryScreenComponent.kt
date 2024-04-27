@@ -2,15 +2,11 @@ package com.face.businessface.ui.details
 
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.value.MutableValue
-import com.arkivanov.essenty.lifecycle.Lifecycle
 import com.face.businessface.database.dao.CardInfoRepository
 import com.face.businessface.database.entity.CardInfo
 import com.face.businessface.navigation.componentCoroutineScope
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 class HistoryScreenComponent (
     componentContext: ComponentContext,
@@ -30,6 +26,4 @@ class HistoryScreenComponent (
             personsList.value = cardInfoRepository.getKnownFaces().first()
         }
     }
-
-
 }
